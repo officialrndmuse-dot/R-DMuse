@@ -7,6 +7,7 @@ import { Catalog } from "./pages/Catalog";
 import { ProductDetail } from "./pages/ProductDetail";
 import { CartPage } from "./pages/CartPage";
 import { Checkout } from "./pages/Checkout";
+import { OrderStatus } from "./pages/OrderStatus";
 import { Blog } from "./pages/Blog";
 import { BlogPost } from "./pages/BlogPost";
 import { About } from "./pages/About";
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/order/:id" element={<OrderStatus />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/about" element={<About />} />

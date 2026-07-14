@@ -13,11 +13,65 @@ export interface Product {
   stock: number;        // units available
   tags: string[];
   description: string;
+  sku?: string;         // falls back to `id` if absent
+  weightKg?: number;    // falls back to a default via getShippingDims()
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
 }
 
 export interface CartItem {
   product: Product;
   qty: number;
+}
+
+// ---- Orders (checkout / Shiprocket / Razorpay) ----
+
+export type PaymentMethod = "razorpay" | "cod";
+export type PaymentStatus = "pending" | "paid" | "failed" | "cod_pending";
+export type OrderStatus = "created" | "confirmed" | "shipped" | "delivered" | "cancelled";
+
+export interface OrderAddress {
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string; // default "India"
+}
+
+export interface OrderItem {
+  productId: string;
+  sku: string;
+  name: string;
+  price: number;
+  qty: number;
+  weightKg: number;
+  lengthCm: number;
+  breadthCm: number;
+  heightCm: number;
+}
+
+export interface Order {
+  id: string;
+  createdAt: string;
+  address: OrderAddress;
+  items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  total: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  shiprocketOrderId?: string;
+  shiprocketShipmentId?: string;
+  awbCode?: string;
+  courierName?: string;
+  status: OrderStatus;
 }
 
 export interface BlogPost {

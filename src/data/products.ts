@@ -2,6 +2,9 @@ import type { Product } from "../types";
 
 // Sample catalog. Swap `image` for real product photos in /public later,
 // or serve this list from json-server (see db.json).
+// TODO(rnd-muse): none of these have real weightKg/lengthCm/breadthCm/heightCm —
+// Shiprocket shipping-rate calculation falls back to placeholder defaults
+// (see getShippingDims in src/lib/pricing.ts) until real values are filled in per SKU.
 export const products: Product[] = [
   {
     id: "bag-01",

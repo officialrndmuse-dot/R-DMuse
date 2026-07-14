@@ -2,11 +2,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { inr } from "../lib/format";
 import { QuantityStepper } from "../components/QuantityStepper";
-
-// Placeholder rates — wire to real logic/GST later
-const TAX_RATE = 0.03;        // 3% placeholder
-const SHIPPING_FLAT = 79;     // ₹79 flat
-const FREE_SHIP_OVER = 1499;  // free above this subtotal
+import { TAX_RATE, FREE_SHIP_OVER, computeOrderTotals } from "../lib/pricing";
 
 export function CartPage() {
   const { items, subtotal, setQty, remove, clear } = useCart();
@@ -23,9 +19,7 @@ export function CartPage() {
     );
   }
 
-  const shipping = subtotal >= FREE_SHIP_OVER ? 0 : SHIPPING_FLAT;
-  const tax = Math.round(subtotal * TAX_RATE);
-  const total = subtotal + shipping + tax;
+  const { shipping, tax, total } = computeOrderTotals(subtotal);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">

@@ -1,0 +1,65 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { computeOrderTotals } from "../src/lib/pricing";
+import { validateAddress } from "./_lib/validate";
+import { resolveOrderItems } from "./_lib/cart";
+import { insertOrder, setRazorpayOrderId, markShipmentCreated } from "./_lib/orders";
+import { createShiprocketOrder } from "./_lib/shiprocket";
+import { createRazorpayOrder } from "./_lib/razorpay";
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  try {
+    const body = req.body ?? {};
+    const address = validateAddress(body.address);
+    const { items, subtotal } = resolveOrderItems(body.items);
+    const { shipping, tax, total } = computeOrderTotals(subtotal);
+
+    const paymentMethod = body.paymentMethod === "razorpay" ? "razorpay" : "cod";
+
+    const order = await insertOrder({
+      address,
+      items,
+      subtotal,
+      shipping,
+      tax,
+      total,
+      paymentMethod,
+    });
+
+    if (paymentMethod === "razorpay") {
+      const rzpOrder = await createRazorpayOrder(Math.round(total * 100), order.id);
+      await setRazorpayOrderId(order.id, rzpOrder.id);
+      res.status(200).json({
+        orderId: order.id,
+        paymentRequired: true,
+        razorpay: {
+          orderId: rzpOrder.id,
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency,
+          keyId: process.env.RAZORPAY_KEY_ID,
+        },
+      });
+      return;
+    }
+
+    // COD: push to Shiprocket immediately. If Shiprocket fails, the order is
+    // still valid (customer pays on delivery regardless) — don't fail the
+    // checkout over a shipping-API hiccup; it stays in "created" status for
+    // a manual/retry follow-up rather than "confirmed".
+    try {
+      const shipment = await createShiprocketOrder(order);
+      await markShipmentCreated(order.id, shipment);
+      res.status(200).json({ orderId: order.id, paymentRequired: false, status: "confirmed" });
+    } catch (shiprocketError) {
+      console.error("Shiprocket order creation failed for order", order.id, shiprocketError);
+      res.status(200).json({ orderId: order.id, paymentRequired: false, status: "created" });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to create order";
+    res.status(400).json({ error: message });
+  }
+}
