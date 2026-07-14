@@ -1,0 +1,88 @@
+import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useProduct } from "../hooks/useProducts";
+import { useCart } from "../context/CartContext";
+import { inr } from "../lib/format";
+import { Stars } from "../components/Stars";
+import { QuantityStepper } from "../components/QuantityStepper";
+
+export function ProductDetail() {
+  const { id } = useParams();
+  const product = useProduct(id);
+  const { add } = useCart();
+  const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
+
+  if (!product) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-20 text-center">
+        <h1 className="text-3xl text-plum">Piece not found</h1>
+        <Link to="/shop" className="mt-4 inline-block text-brass hover:underline">
+          ← Back to shop
+        </Link>
+      </div>
+    );
+  }
+
+  const soldOut = product.stock <= 0;
+
+  const handleAdd = () => {
+    add(product, qty);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1800);
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <Link to="/shop" className="text-sm text-plum/60 hover:text-plum">← Shop</Link>
+
+      <div className="mt-6 grid gap-10 md:grid-cols-2">
+        <div className="overflow-hidden rounded-xl2 bg-white shadow-soft">
+          <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+        </div>
+
+        <div>
+          <h1 className="font-display text-4xl text-plum">{product.name}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            <Stars rating={product.rating} />
+            <span className="text-sm text-plum/50">{product.rating.toFixed(1)} rating</span>
+          </div>
+
+          <div className="mt-5 flex items-center gap-3">
+            <span className="text-3xl font-semibold">{inr(product.price)}</span>
+            {product.mrp && (
+              <span className="text-lg text-plum/40 line-through">{inr(product.mrp)}</span>
+            )}
+          </div>
+
+          <p className="mt-5 leading-relaxed text-ink/80">{product.description}</p>
+
+          <p className={`mt-4 text-sm ${soldOut ? "text-red-600" : "text-plum/60"}`}>
+            {soldOut ? "Currently sold out" : `${product.stock} in stock`}
+          </p>
+
+          {!soldOut && (
+            <div className="mt-6 flex items-center gap-4">
+              <QuantityStepper value={qty} max={product.stock} onChange={setQty} />
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="rounded-full bg-plum px-8 py-3 text-sm font-semibold text-ivory hover:bg-berry"
+              >
+                {added ? "Added ✓" : "Add to cart"}
+              </button>
+            </div>
+          )}
+
+          <div className="mt-8 flex flex-wrap gap-2">
+            {product.tags.map((t) => (
+              <span key={t} className="rounded-full bg-blush/30 px-3 py-1 text-xs text-plum">
+                #{t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

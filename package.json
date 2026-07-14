@@ -1,0 +1,29 @@
+{
+  "name": "rnd-muse",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "RnD Muse — ethnic x modern accessories store (bags, earrings, festive picks)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "api": "json-server --watch db.json --port 4000"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "json-server": "^0.17.4",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.6"
+  }
+}
