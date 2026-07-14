@@ -1,4 +1,4 @@
-import type { Order } from "../../src/types";
+import type { Order } from "../../src/types.js";
 
 const BASE_URL = "https://apiv2.shiprocket.in/v1/external";
 

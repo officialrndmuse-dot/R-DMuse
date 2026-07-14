@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { computeOrderTotals } from "../src/lib/pricing";
-import { validateAddress } from "./_lib/validate";
-import { resolveOrderItems } from "./_lib/cart";
-import { insertOrder, setRazorpayOrderId, markShipmentCreated } from "./_lib/orders";
-import { createShiprocketOrder } from "./_lib/shiprocket";
-import { createRazorpayOrder } from "./_lib/razorpay";
+import { computeOrderTotals } from "../src/lib/pricing.js";
+import { validateAddress } from "./_lib/validate.js";
+import { resolveOrderItems } from "./_lib/cart.js";
+import { insertOrder, setRazorpayOrderId, markShipmentCreated } from "./_lib/orders.js";
+import { createShiprocketOrder } from "./_lib/shiprocket.js";
+import { createRazorpayOrder } from "./_lib/razorpay.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

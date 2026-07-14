@@ -1,5 +1,5 @@
-import { getSupabase } from "./supabase";
-import type { Order, OrderAddress, OrderItem, PaymentMethod, PaymentStatus, OrderStatus } from "../../src/types";
+import { getSupabase } from "./supabase.js";
+import type { Order, OrderAddress, OrderItem, PaymentMethod, PaymentStatus, OrderStatus } from "../../src/types.js";
 
 // Row shape as stored in Supabase (snake_case columns, see supabase/schema.sql)
 interface OrderRow {

@@ -1,4 +1,4 @@
-import type { OrderAddress } from "../../src/types";
+import type { OrderAddress } from "../../src/types.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[6-9]\d{9}$/; // Indian mobile numbers

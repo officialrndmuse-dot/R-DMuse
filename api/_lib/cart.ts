@@ -1,6 +1,6 @@
-import { products } from "../../src/data/products";
-import { getShippingDims } from "../../src/lib/pricing";
-import type { OrderItem } from "../../src/types";
+import { products } from "../../src/data/products.js";
+import { getShippingDims } from "../../src/lib/pricing.js";
+import type { OrderItem } from "../../src/types.js";
 
 export interface CartInputLine {
   productId: string;

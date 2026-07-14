@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyRazorpaySignature } from "./_lib/razorpay";
-import { getOrder, markPaid, markPaymentFailed, markShipmentCreated } from "./_lib/orders";
-import { createShiprocketOrder } from "./_lib/shiprocket";
+import { verifyRazorpaySignature } from "./_lib/razorpay.js";
+import { getOrder, markPaid, markPaymentFailed, markShipmentCreated } from "./_lib/orders.js";
+import { createShiprocketOrder } from "./_lib/shiprocket.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
