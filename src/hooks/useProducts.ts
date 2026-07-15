@@ -41,24 +41,49 @@ function rowToProduct(row: ProductRow): Product {
   };
 }
 
-export function useProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+// Module-level cache: the catalog is small and changes only via the CRM, so
+// one fetch per browser session is enough — without this, every page
+// (Home, Catalog, ProductDetail, Wishlist) re-fetches the full list on every
+// navigation. A hard refresh picks up CRM edits; an already-open tab won't
+// see them until then, which is an acceptable trade-off for a small catalog.
+let cache: Product[] | null = null;
+let inflight: Promise<Product[]> | null = null;
 
-  useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
+function fetchAllProducts(): Promise<Product[]> {
+  if (cache) return Promise.resolve(cache);
+  if (inflight) return inflight;
+  if (!supabase) return Promise.resolve([]);
+
+  inflight = Promise.resolve(
     supabase
       .from("products")
       .select()
       .then(({ data, error }) => {
-        if (cancelled) return;
-        if (!error && data) setProducts((data as unknown as ProductRow[]).map(rowToProduct));
-        setLoading(false);
-      });
+        const result = !error && data ? (data as unknown as ProductRow[]).map(rowToProduct) : [];
+        cache = result;
+        inflight = null;
+        return result;
+      })
+  );
+  return inflight;
+}
+
+export function useProducts() {
+  const [products, setProducts] = useState<Product[]>(cache ?? []);
+  const [loading, setLoading] = useState(!cache);
+
+  useEffect(() => {
+    if (cache) {
+      setProducts(cache);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    fetchAllProducts().then((result) => {
+      if (cancelled) return;
+      setProducts(result);
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
@@ -97,26 +122,22 @@ export function filterProducts(all: Product[], f: Filters): Product[] {
 }
 
 export function useProduct(id?: string) {
-  const [product, setProduct] = useState<Product | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState<Product | undefined>(() =>
+    id ? cache?.find((p) => p.id === id) : undefined
+  );
+  const [loading, setLoading] = useState(!cache);
 
   useEffect(() => {
-    if (!id || !supabase) {
+    if (!id) {
       setLoading(false);
       return;
     }
     let cancelled = false;
-    setLoading(true);
-    supabase
-      .from("products")
-      .select()
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setProduct(!error && data ? rowToProduct(data as unknown as ProductRow) : undefined);
-        setLoading(false);
-      });
+    fetchAllProducts().then((result) => {
+      if (cancelled) return;
+      setProduct(result.find((p) => p.id === id));
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };

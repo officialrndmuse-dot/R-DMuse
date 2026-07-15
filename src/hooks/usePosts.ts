@@ -29,25 +29,47 @@ function rowToPost(row: PostRow): BlogPost {
   };
 }
 
-export function usePosts() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+// Module-level cache, same rationale as useProducts.ts — one fetch per
+// browser session instead of one per page visit.
+let cache: BlogPost[] | null = null;
+let inflight: Promise<BlogPost[]> | null = null;
 
-  useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
+function fetchAllPosts(): Promise<BlogPost[]> {
+  if (cache) return Promise.resolve(cache);
+  if (inflight) return inflight;
+  if (!supabase) return Promise.resolve([]);
+
+  inflight = Promise.resolve(
     supabase
       .from("posts")
       .select()
       .order("date", { ascending: false })
       .then(({ data, error }) => {
-        if (cancelled) return;
-        if (!error && data) setPosts((data as unknown as PostRow[]).map(rowToPost));
-        setLoading(false);
-      });
+        const result = !error && data ? (data as unknown as PostRow[]).map(rowToPost) : [];
+        cache = result;
+        inflight = null;
+        return result;
+      })
+  );
+  return inflight;
+}
+
+export function usePosts() {
+  const [posts, setPosts] = useState<BlogPost[]>(cache ?? []);
+  const [loading, setLoading] = useState(!cache);
+
+  useEffect(() => {
+    if (cache) {
+      setPosts(cache);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    fetchAllPosts().then((result) => {
+      if (cancelled) return;
+      setPosts(result);
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
@@ -57,26 +79,22 @@ export function usePosts() {
 }
 
 export function usePost(slug?: string) {
-  const [post, setPost] = useState<BlogPost | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState<BlogPost | undefined>(() =>
+    slug ? cache?.find((p) => p.slug === slug) : undefined
+  );
+  const [loading, setLoading] = useState(!cache);
 
   useEffect(() => {
-    if (!slug || !supabase) {
+    if (!slug) {
       setLoading(false);
       return;
     }
     let cancelled = false;
-    setLoading(true);
-    supabase
-      .from("posts")
-      .select()
-      .eq("slug", slug)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setPost(!error && data ? rowToPost(data as unknown as PostRow) : undefined);
-        setLoading(false);
-      });
+    fetchAllPosts().then((result) => {
+      if (cancelled) return;
+      setPost(result.find((p) => p.slug === slug));
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
