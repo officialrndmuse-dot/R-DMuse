@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authedFetch } from "../../lib/api";
+import { AdminLayout } from "../../components/admin/AdminLayout";
 import type { ReturnRequest, ReturnStatus } from "../../types";
 
 interface AdminReturn extends ReturnRequest {
@@ -10,7 +11,7 @@ interface AdminReturn extends ReturnRequest {
 const STATUSES: ReturnStatus[] = ["requested", "approved", "rejected", "completed"];
 
 export function AdminReturns() {
-  const { getIdToken, signOutUser } = useAuth();
+  const { getIdToken } = useAuth();
   const [returns, setReturns] = useState<AdminReturn[] | null>(null);
 
   const load = async () => {
@@ -31,11 +32,8 @@ export function AdminReturns() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl text-plum">Return requests</h1>
-        <button onClick={() => signOutUser()} className="text-sm text-plum/50 hover:text-plum">Logout</button>
-      </div>
+    <AdminLayout>
+      <h1 className="text-2xl text-plum">Return requests</h1>
 
       {returns === null ? (
         <p className="mt-6 text-sm text-plum/50">Loading…</p>
@@ -63,6 +61,6 @@ export function AdminReturns() {
           ))}
         </ul>
       )}
-    </div>
+    </AdminLayout>
   );
 }

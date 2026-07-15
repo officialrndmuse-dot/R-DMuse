@@ -81,7 +81,20 @@ export interface Profile {
   id: string; // Supabase Auth uid
   name: string | null;
   phone: string | null;
+  email: string | null;
   createdAt: string;
+}
+
+// Admin-only: a registered customer enriched with order aggregates.
+export interface CustomerSummary {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  orderCount: number;
+  totalSpent: number;
+  lastOrderAt: string | null;
+  joinedAt: string;
 }
 
 export interface Address {

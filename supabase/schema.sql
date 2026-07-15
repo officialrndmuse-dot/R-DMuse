@@ -58,16 +58,19 @@ create trigger orders_set_updated_at
   for each row execute function set_updated_at();
 
 -- ---- Customer accounts ----
--- Identity comes from Firebase Auth (not Supabase Auth), so user_id columns
--- are plain text (Firebase uid strings) with no FK into any Supabase auth
--- schema. Same security model as `orders`: RLS enabled, zero public
--- policies. All access happens server-side via the service-role key after
--- the caller's Firebase ID token has been verified in api/_lib/auth.ts.
+-- user_id columns are plain text (Supabase Auth uid strings) rather than a
+-- declared `references auth.users(id)` FK, so PostgREST embedding across
+-- them isn't available -- admin aggregate views join these in application
+-- code instead (see api/_lib/profiles.ts's listAllCustomers). Same security
+-- model as `orders`: RLS enabled, zero public policies. All access happens
+-- server-side via the service-role key after the caller's Supabase Auth JWT
+-- has been verified in api/_lib/auth.ts.
 
 create table if not exists profiles (
-  id text primary key, -- Firebase uid
+  id text primary key, -- Supabase Auth uid
   name text,
-  phone text,          -- cached from the Firebase user at first login
+  phone text,          -- cached from the auth user at first login
+  email text,           -- cached from the auth user at first login
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -135,3 +138,7 @@ create trigger returns_set_updated_at
 -- Ties orders to accounts; nullable so guest checkout keeps working unchanged.
 alter table orders add column if not exists user_id text;
 create index if not exists orders_user_id_idx on orders(user_id);
+
+-- Added after the initial profiles table shipped; `create table if not
+-- exists` above won't add this to an already-existing table.
+alter table profiles add column if not exists email text;

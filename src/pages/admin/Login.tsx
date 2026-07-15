@@ -16,7 +16,7 @@ export function AdminLogin() {
       if (!supabase) throw new Error("not-configured");
       const { error: err } = await supabase.auth.signInWithPassword({ email, password });
       if (err) throw err;
-      navigate("/admin/returns", { replace: true });
+      navigate("/admin/orders", { replace: true });
     } catch (err) {
       setError(
         err instanceof Error && err.message === "not-configured"
