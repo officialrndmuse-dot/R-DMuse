@@ -91,3 +91,39 @@ export interface CustomerSummary {
   lastOrderAt: string | null;
   joinedAt: string;
 }
+
+export type Category = "bags" | "earrings" | "festive" | "hair" | "bangles";
+
+export interface Product {
+  id: string;
+  name: string;
+  category: Category;
+  price: number;
+  mrp?: number;
+  stock: number;
+  image: string;
+  rating: number;
+  tags: string[];
+  description: string;
+  sku?: string;
+  weightKg: number;
+  lengthCm: number;
+  breadthCm: number;
+  heightCm: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  body: string; // HTML, authored via the Tiptap editor
+  cover: string;
+  author: string;
+  date: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}

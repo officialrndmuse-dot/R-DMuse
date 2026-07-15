@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useProducts, filterProducts, type Filters } from "../hooks/useProducts";
-import { categories } from "../data/products";
+import { categories } from "../data/categories";
 import { ProductList } from "../components/ProductList";
 import type { Category } from "../types";
 import type { ReactNode } from "react";
 
 export function Catalog() {
-  const all = useProducts();
+  const { products: all, loading } = useProducts();
   const [params, setParams] = useSearchParams();
 
   // Category is driven by the URL (?category=…) so links + back button work
@@ -70,7 +70,11 @@ export function Catalog() {
       </div>
 
       <div className="mt-8">
-        <ProductList products={results} />
+        {loading ? (
+          <p className="text-plum/50">Loading…</p>
+        ) : (
+          <ProductList products={results} />
+        )}
       </div>
     </div>
   );

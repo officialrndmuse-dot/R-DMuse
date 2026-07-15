@@ -6,6 +6,8 @@ const navItems = [
   { to: "/orders", label: "Orders" },
   { to: "/customers", label: "Customers" },
   { to: "/returns", label: "Returns" },
+  { to: "/products", label: "Products" },
+  { to: "/journal", label: "Journal" },
 ];
 
 export function Sidebar() {

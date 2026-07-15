@@ -1,11 +1,70 @@
-import { useMemo } from "react";
-import { products as localProducts } from "../data/products";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 import type { Category, Product } from "../types";
 
-// MVP: reads from local data. To use a real API later, replace the body
-// with a fetch to json-server: fetch("http://localhost:4000/products").
+// Row shape as stored in Supabase (snake_case columns, see supabase/schema.sql)
+interface ProductRow {
+  id: string;
+  name: string;
+  category: Category;
+  price: number;
+  mrp: number | null;
+  stock: number;
+  image: string;
+  rating: number;
+  tags: string[];
+  description: string;
+  sku: string | null;
+  weight_kg: number;
+  length_cm: number;
+  breadth_cm: number;
+  height_cm: number;
+}
+
+function rowToProduct(row: ProductRow): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    price: row.price,
+    mrp: row.mrp ?? undefined,
+    stock: row.stock,
+    image: row.image,
+    rating: row.rating,
+    tags: row.tags,
+    description: row.description,
+    sku: row.sku ?? undefined,
+    weightKg: row.weight_kg,
+    lengthCm: row.length_cm,
+    breadthCm: row.breadth_cm,
+    heightCm: row.height_cm,
+  };
+}
+
 export function useProducts() {
-  return localProducts;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("products")
+      .select()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) setProducts((data as unknown as ProductRow[]).map(rowToProduct));
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { products, loading };
 }
 
 export interface Filters {
@@ -38,6 +97,30 @@ export function filterProducts(all: Product[], f: Filters): Product[] {
 }
 
 export function useProduct(id?: string) {
-  const all = useProducts();
-  return useMemo(() => all.find((p) => p.id === id), [all, id]);
+  const [product, setProduct] = useState<Product | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id || !supabase) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    supabase
+      .from("products")
+      .select()
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setProduct(!error && data ? rowToProduct(data as unknown as ProductRow) : undefined);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  return { product, loading };
 }

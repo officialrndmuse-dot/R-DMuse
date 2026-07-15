@@ -10,13 +10,17 @@ import { QuantityStepper } from "../components/QuantityStepper";
 
 export function ProductDetail() {
   const { id } = useParams();
-  const product = useProduct(id);
+  const { product, loading } = useProduct(id);
   const { add } = useCart();
   const { has, toggle } = useWishlist();
   const { status } = useAuth();
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+
+  if (loading) {
+    return <div className="mx-auto max-w-6xl px-4 py-20 text-center text-plum/50">Loading…</div>;
+  }
 
   if (!product) {
     return (

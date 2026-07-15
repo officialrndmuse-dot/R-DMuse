@@ -2,10 +2,11 @@ import { Link } from "react-router-dom";
 import { useWishlist } from "../../context/WishlistContext";
 import { AccountLayout } from "../../components/account/AccountLayout";
 import { ProductCard } from "../../components/ProductCard";
-import { products } from "../../data/products";
+import { useProducts } from "../../hooks/useProducts";
 
 export function Wishlist() {
   const { ids } = useWishlist();
+  const { products } = useProducts();
   const items = products.filter((p) => ids.has(p.id));
 
   return (

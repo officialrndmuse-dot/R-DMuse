@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { posts, allTags } from "../data/posts";
+import { usePosts, allTagsFrom } from "../hooks/usePosts";
 import { formatDate } from "../lib/format";
 import type { ReactNode } from "react";
 
 export function Blog() {
+  const { posts, loading } = usePosts();
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState<string | null>(null);
+
+  const allTags = useMemo(() => allTagsFrom(posts), [posts]);
 
   const filtered = useMemo(() => {
     return posts.filter((p) => {
@@ -16,7 +19,7 @@ export function Blog() {
         !q || p.title.toLowerCase().includes(q) || p.excerpt.toLowerCase().includes(q);
       return matchesTag && matchesQuery;
     });
-  }, [query, tag]);
+  }, [posts, query, tag]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -60,7 +63,9 @@ export function Blog() {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {loading && <p className="mt-10 text-center text-plum/50">Loading…</p>}
+
+      {!loading && filtered.length === 0 && (
         <p className="mt-10 text-center text-plum/50">No articles match that filter yet.</p>
       )}
     </div>

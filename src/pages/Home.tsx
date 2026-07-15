@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import { useProducts } from "../hooks/useProducts";
-import { categories } from "../data/products";
+import { categories } from "../data/categories";
 import { ProductList } from "../components/ProductList";
 
 export function Home() {
-  const products = useProducts();
+  const { products, loading } = useProducts();
   const featured = products.slice(0, 4);
 
   return (
@@ -57,7 +57,11 @@ export function Home() {
             View all →
           </Link>
         </div>
-        <ProductList products={featured} />
+        {loading ? (
+          <p className="text-plum/50">Loading…</p>
+        ) : (
+          <ProductList products={featured} />
+        )}
       </section>
     </div>
   );

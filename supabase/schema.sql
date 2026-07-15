@@ -151,3 +151,65 @@ alter table profiles add column if not exists email text;
 -- internal uuid `id` used for URLs/lookups. Generated in api/_lib/orders.ts
 -- at insert time, not by a DB default.
 alter table orders add column if not exists order_number text unique;
+
+-- ---- Product catalog + Journal (blog) ----
+-- Unlike every table above, these two are public catalog data -- customers
+-- must be able to read them with no login at all. They get an explicit
+-- public SELECT policy (a deliberate, narrow exception to the zero-policy
+-- rule used everywhere else in this file) so the storefront can query them
+-- directly via the anon key (src/lib/supabaseClient.ts). There is no
+-- INSERT/UPDATE/DELETE policy, so writes still only ever happen through the
+-- CRM's service-role key -- the anon key can read but never modify these.
+
+create table if not exists products (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  category text not null check (category in ('bags','earrings','festive','hair','bangles')),
+  price numeric not null,
+  mrp numeric,
+  stock integer not null default 0,
+  image text not null,
+  rating numeric not null default 5,
+  tags text[] not null default '{}',
+  description text not null default '',
+  sku text,
+  -- Required, with the same defaults src/lib/pricing.ts's getShippingDims()
+  -- previously fell back to -- this table replaces that fallback with real
+  -- per-product data going forward.
+  weight_kg numeric not null default 0.2,
+  length_cm numeric not null default 15,
+  breadth_cm numeric not null default 10,
+  height_cm numeric not null default 5,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table products enable row level security;
+drop policy if exists "Public read access" on products;
+create policy "Public read access" on products for select using (true);
+
+drop trigger if exists products_set_updated_at on products;
+create trigger products_set_updated_at
+  before update on products
+  for each row execute function set_updated_at();
+
+create table if not exists posts (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  title text not null,
+  excerpt text not null default '',
+  body text not null default '', -- HTML, written via the CRM's rich-text editor
+  cover text not null,
+  author text not null,
+  date date not null default current_date,
+  tags text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table posts enable row level security;
+drop policy if exists "Public read access" on posts;
+create policy "Public read access" on posts for select using (true);
+
+drop trigger if exists posts_set_updated_at on posts;
+create trigger posts_set_updated_at
+  before update on posts
+  for each row execute function set_updated_at();

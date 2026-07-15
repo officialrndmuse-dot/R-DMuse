@@ -121,7 +121,7 @@ export interface BlogPost {
   slug: string;
   title: string;
   excerpt: string;
-  body: string;         // simple paragraphs separated by \n\n
+  body: string;         // HTML, authored via the CRM's rich-text editor
   cover: string;
   author: string;
   date: string;         // ISO date
