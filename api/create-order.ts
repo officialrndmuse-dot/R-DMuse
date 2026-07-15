@@ -2,8 +2,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { computeOrderTotals } from "../src/lib/pricing.js";
 import { validateAddress } from "./_lib/validate.js";
 import { resolveOrderItems } from "./_lib/cart.js";
-import { insertOrder, setRazorpayOrderId, markShipmentCreated } from "./_lib/orders.js";
-import { createShiprocketOrder } from "./_lib/shiprocket.js";
+import { insertOrder, setRazorpayOrderId, markShipmentCreated, markCourierAssigned } from "./_lib/orders.js";
+import { createShiprocketOrder, assignAWB } from "./_lib/shiprocket.js";
 import { createRazorpayOrder } from "./_lib/razorpay.js";
 import { getAuthedUser } from "./_lib/auth.js";
 
@@ -58,6 +58,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const shipment = await createShiprocketOrder(order);
       await markShipmentCreated(order.id, shipment);
+      try {
+        const awb = await assignAWB(shipment.shiprocketShipmentId);
+        if (awb) await markCourierAssigned(order.id, awb);
+      } catch (awbError) {
+        console.error("AWB assignment failed for order", order.id, awbError);
+      }
       res.status(200).json({ orderId: order.id, paymentRequired: false, status: "confirmed" });
     } catch (shiprocketError) {
       console.error("Shiprocket order creation failed for order", order.id, shiprocketError);

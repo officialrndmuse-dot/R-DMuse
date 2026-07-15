@@ -100,3 +100,86 @@ export async function createShiprocketOrder(order: Order): Promise<ShiprocketOrd
     shiprocketShipmentId: String(data.shipment_id),
   };
 }
+
+export interface AwbAssignResult {
+  awbCode: string;
+  courierName: string;
+}
+
+// Auto-assigns Shiprocket's recommended courier and generates an AWB for the
+// shipment (no courier_id passed = Shiprocket picks the recommended one).
+// Best-effort: returns null on failure instead of throwing -- a missing AWB
+// must not fail checkout, and can still be assigned manually from the
+// Shiprocket dashboard.
+export async function assignAWB(shipmentId: string): Promise<AwbAssignResult | null> {
+  const token = await getToken();
+  const res = await fetch(`${BASE_URL}/courier/assign/awb`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ shipment_id: Number(shipmentId) }),
+  });
+
+  if (!res.ok) {
+    console.error("Shiprocket AWB assignment failed:", res.status, await res.text());
+    return null;
+  }
+
+  const data = (await res.json()) as {
+    response?: { data?: { awb_code?: string | number; courier_name?: string } };
+  };
+  const awbCode = data.response?.data?.awb_code;
+  if (!awbCode) return null;
+  return { awbCode: String(awbCode), courierName: data.response?.data?.courier_name ?? "" };
+}
+
+export interface TrackingEvent {
+  date: string;
+  status: string;
+  activity: string;
+  location: string;
+}
+
+export interface TrackingInfo {
+  currentStatus: string;
+  edd: string | null;
+  trackUrl: string | null;
+  events: TrackingEvent[];
+}
+
+// Live tracking straight from Shiprocket -- the same scan history shown on
+// Shiprocket's own tracking page.
+export async function trackShipment(awbCode: string): Promise<TrackingInfo | null> {
+  const token = await getToken();
+  const res = await fetch(`${BASE_URL}/courier/track/awb/${encodeURIComponent(awbCode)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as {
+    tracking_data?: {
+      track_url?: string;
+      shipment_track?: { current_status?: string; edd?: string }[];
+      shipment_track_activities?: { date?: string; status?: string; activity?: string; location?: string }[];
+    };
+  };
+  const tracking = data.tracking_data;
+  if (!tracking) return null;
+
+  const summary = tracking.shipment_track?.[0];
+  const activities = tracking.shipment_track_activities ?? [];
+
+  return {
+    currentStatus: summary?.current_status ?? "In transit",
+    edd: summary?.edd ?? null,
+    trackUrl: tracking.track_url ?? null,
+    events: activities.map((a) => ({
+      date: a.date ?? "",
+      status: a.status ?? "",
+      activity: a.activity ?? "",
+      location: a.location ?? "",
+    })),
+  };
+}

@@ -189,3 +189,50 @@ export async function markShipmentCreated(orderId: string, result: ShiprocketRes
     .eq("id", orderId);
   if (error) throw new Error(`Failed to mark shipment created: ${error.message}`);
 }
+
+export async function markCourierAssigned(
+  orderId: string,
+  result: { awbCode: string; courierName: string }
+): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("orders")
+    .update({ awb_code: result.awbCode, courier_name: result.courierName })
+    .eq("id", orderId);
+  if (error) throw new Error(`Failed to mark courier assigned: ${error.message}`);
+}
+
+const STATUS_RANK: Record<OrderStatus, number> = {
+  created: 0,
+  confirmed: 1,
+  shipped: 2,
+  delivered: 3,
+  cancelled: 4,
+};
+
+// Opportunistically advances our own status field to match Shiprocket's live
+// tracking status whenever a customer checks the tracking page -- only ever
+// moves forward, and never touches an order that's already delivered/cancelled.
+// Returns the order's resulting status either way, so callers don't need to
+// re-derive it themselves.
+export async function syncStatusFromShiprocket(
+  orderId: string,
+  shiprocketStatus: string
+): Promise<OrderStatus | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("orders").select("status").eq("id", orderId).maybeSingle();
+  if (error || !data) return null;
+  const current = (data as { status: OrderStatus }).status;
+  if (current === "cancelled" || current === "delivered") return current;
+
+  const normalized = shiprocketStatus.toLowerCase();
+  let next: OrderStatus = current;
+  if (normalized.includes("delivered")) next = "delivered";
+  else if (/out for delivery|in transit|shipped|picked up/.test(normalized)) next = "shipped";
+
+  if (STATUS_RANK[next] <= STATUS_RANK[current]) return current;
+
+  const { error: updateError } = await supabase.from("orders").update({ status: next }).eq("id", orderId);
+  if (updateError) return current;
+  return next;
+}

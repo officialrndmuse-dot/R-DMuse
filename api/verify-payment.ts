@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { verifyRazorpaySignature } from "./_lib/razorpay.js";
-import { getOrder, markPaid, markPaymentFailed, markShipmentCreated } from "./_lib/orders.js";
-import { createShiprocketOrder } from "./_lib/shiprocket.js";
+import { getOrder, markPaid, markPaymentFailed, markShipmentCreated, markCourierAssigned } from "./_lib/orders.js";
+import { createShiprocketOrder, assignAWB } from "./_lib/shiprocket.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -37,6 +37,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const shipment = await createShiprocketOrder(order);
       await markShipmentCreated(orderId, shipment);
+      try {
+        const awb = await assignAWB(shipment.shiprocketShipmentId);
+        if (awb) await markCourierAssigned(orderId, awb);
+      } catch (awbError) {
+        console.error("AWB assignment failed for order", orderId, awbError);
+      }
     } catch (shiprocketError) {
       console.error("Shiprocket order creation failed for order", orderId, shiprocketError);
     }
