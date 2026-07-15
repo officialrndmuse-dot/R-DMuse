@@ -4,6 +4,7 @@ import { listAllReturns, updateReturnStatus } from "./_lib/returns.js";
 import { listAllOrders, listOrdersForUser } from "./_lib/orders.js";
 import { listAllCustomers, getProfile } from "./_lib/profiles.js";
 import { listAddresses } from "./_lib/addresses.js";
+import { getDashboardStats } from "./_lib/dashboard.js";
 import type { ReturnStatus } from "../src/types.js";
 
 const VALID_STATUSES: ReturnStatus[] = ["requested", "approved", "rejected", "completed"];
@@ -101,6 +102,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
     res.status(200).json({ profile, orders, addresses });
+    return;
+  }
+
+  if (resource === "dashboard") {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    if (req.method !== "GET") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+    res.status(200).json(await getDashboardStats());
     return;
   }
 
