@@ -104,7 +104,11 @@ create table if not exists wishlist (
 create index if not exists wishlist_user_id_idx on wishlist(user_id);
 alter table wishlist enable row level security;
 
-create type return_status as enum ('requested', 'approved', 'rejected', 'completed');
+do $$ begin
+  create type return_status as enum ('requested', 'approved', 'rejected', 'completed');
+exception
+  when duplicate_object then null; -- already exists, safe to re-run this file
+end $$;
 
 create table if not exists returns (
   id uuid primary key default gen_random_uuid(),
