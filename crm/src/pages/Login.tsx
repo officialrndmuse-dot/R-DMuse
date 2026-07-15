@@ -21,6 +21,8 @@ export function Login() {
       setError(
         err instanceof Error && err.message === "not-configured"
           ? "Sign-in isn't set up yet"
+          : err instanceof Error
+          ? err.message
           : "Invalid email or password"
       );
     } finally {
