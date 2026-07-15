@@ -43,7 +43,10 @@ export function CartPage() {
                 <span className="text-sm text-plum/50">{inr(product.price)} each</span>
                 <div className="mt-auto flex items-center justify-between">
                   <QuantityStepper value={qty} max={product.stock} onChange={(n) => setQty(product.id, n)} />
-                  <button onClick={() => remove(product.id)} className="text-sm text-plum/50 hover:text-red-600">
+                  <button
+                    onClick={() => remove(product.id)}
+                    className="rounded-full border border-plum/20 bg-white px-4 py-2 text-sm font-medium text-plum/70 hover:border-red-300 hover:text-red-600"
+                  >
                     Remove
                   </button>
                 </div>
