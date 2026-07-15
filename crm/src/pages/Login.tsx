@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import logoFull from "../assets/logo-full.jpg";
 
 export function Login() {
   const navigate = useNavigate();
@@ -32,10 +33,8 @@ export function Login() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-24">
-      <h1 className="text-center text-3xl text-plum">
-        R&amp;D <span className="italic text-brassLite">Muse</span> CRM
-      </h1>
-      <p className="mt-2 text-center text-sm text-plum/60">Admin sign in</p>
+      <img src={logoFull} alt="RnD Muse" className="mx-auto h-24 w-auto" />
+      <p className="mt-2 text-center text-sm text-plum/60">CRM admin sign in</p>
       <div className="mt-8 space-y-4">
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-plum">Email</span>

@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import logoMark from "../assets/logo-mark.jpg";
 
 const nav = [
   { to: "/", label: "Home", end: true },
@@ -15,10 +16,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-plum/10 bg-ivory/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        {/* Wordmark — "R&D" stays in the identity, domain is rndmuse */}
-        <Link to="/" className="flex items-baseline gap-1" aria-label="RnD Muse home">
-          <span className="font-display text-2xl font-bold text-plum">R&amp;D</span>
-          <span className="font-display text-2xl italic text-brass">Muse</span>
+        <Link to="/" aria-label="RnD Muse home">
+          <img src={logoMark} alt="RnD Muse" className="h-9 w-auto" />
         </Link>
 
         <nav className="hidden gap-8 md:flex" aria-label="Primary">

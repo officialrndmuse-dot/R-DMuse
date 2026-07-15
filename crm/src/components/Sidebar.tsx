@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import logoMark from "../assets/logo-mark.jpg";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
@@ -16,10 +17,8 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-plum/10 bg-white">
       <div className="p-6">
-        <p className="font-display text-lg text-plum">
-          R&amp;D <span className="italic text-brassLite">Muse</span>
-        </p>
-        <p className="text-xs text-plum/50">CRM</p>
+        <img src={logoMark} alt="RnD Muse" className="h-7 w-auto" />
+        <p className="mt-1 text-xs text-plum/50">CRM</p>
       </div>
 
       <nav className="flex-1 space-y-1 px-3">
