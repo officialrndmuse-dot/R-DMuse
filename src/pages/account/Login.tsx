@@ -1,22 +1,38 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import {
+  RecaptchaVerifier, signInWithPhoneNumber, signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, type ConfirmationResult,
+} from "firebase/auth";
 import { firebaseAuth } from "../../lib/firebaseClient";
 import { useAuth } from "../../context/AuthContext";
 
 const PHONE_RE = /^[6-9]\d{9}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type Method = "phone" | "email";
+type EmailMode = "signin" | "signup";
+type PhoneStep = "phone" | "otp";
 
 export function Login() {
   const { status } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const [method, setMethod] = useState<Method>("phone");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // Phone/OTP state
+  const [phoneStep, setPhoneStep] = useState<PhoneStep>("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+
+  // Email/password state
+  const [emailMode, setEmailMode] = useState<EmailMode>("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (status === "signedIn") {
@@ -24,6 +40,11 @@ export function Login() {
       navigate(from, { replace: true });
     }
   }, [status, navigate, location.state]);
+
+  const switchMethod = (m: Method) => {
+    setMethod(m);
+    setError("");
+  };
 
   const sendOtp = async () => {
     setError("");
@@ -39,7 +60,7 @@ export function Login() {
         size: "invisible",
       });
       confirmationRef.current = await signInWithPhoneNumber(firebaseAuth, `+91${phone}`, verifier);
-      setStep("otp");
+      setPhoneStep("otp");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send OTP");
     } finally {
@@ -51,7 +72,7 @@ export function Login() {
     setError("");
     if (!confirmationRef.current) {
       setError("Please request the OTP again");
-      setStep("phone");
+      setPhoneStep("phone");
       return;
     }
     setBusy(true);
@@ -65,70 +86,164 @@ export function Login() {
     }
   };
 
+  const submitEmail = async () => {
+    setError("");
+    if (!EMAIL_RE.test(email)) {
+      setError("Enter a valid email address");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (!firebaseAuth) throw new Error("Sign-in isn't set up yet — please check back soon");
+      if (emailMode === "signup") {
+        await createUserWithEmailAndPassword(firebaseAuth, email, password);
+      } else {
+        await signInWithEmailAndPassword(firebaseAuth, email, password);
+      }
+      // Navigation happens via the useEffect above once auth state updates.
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      const message =
+        code === "auth/email-already-in-use" ? "An account already exists with this email — try signing in instead."
+        : code === "auth/invalid-credential" || code === "auth/wrong-password" ? "Incorrect email or password."
+        : code === "auth/user-not-found" ? "No account found with this email — try creating one instead."
+        : err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-md px-4 py-24">
       <h1 className="text-center text-3xl text-plum">Sign in</h1>
-      <p className="mt-2 text-center text-sm text-plum/60">
-        {step === "phone" ? "Enter your mobile number to continue" : `Enter the code sent to +91 ${phone}`}
-      </p>
 
-      <div className="mt-8 space-y-4">
-        {step === "phone" ? (
-          <>
+      <div className="mx-auto mt-6 flex max-w-xs rounded-full bg-plum/5 p-1">
+        <button
+          onClick={() => switchMethod("phone")}
+          className={`flex-1 rounded-full py-2 text-sm font-medium transition-colors ${
+            method === "phone" ? "bg-white text-plum shadow-soft" : "text-plum/50"
+          }`}
+        >
+          Phone OTP
+        </button>
+        <button
+          onClick={() => switchMethod("email")}
+          className={`flex-1 rounded-full py-2 text-sm font-medium transition-colors ${
+            method === "email" ? "bg-white text-plum shadow-soft" : "text-plum/50"
+          }`}
+        >
+          Email & password
+        </button>
+      </div>
+
+      {method === "phone" ? (
+        <>
+          <p className="mt-4 text-center text-sm text-plum/60">
+            {phoneStep === "phone" ? "Enter your mobile number to continue" : `Enter the code sent to +91 ${phone}`}
+          </p>
+          <div className="mt-6 space-y-4">
+            {phoneStep === "phone" ? (
+              <>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-plum">Mobile number</span>
+                  <div className="flex items-center rounded-xl border border-plum/20 bg-white px-4 focus-within:border-brass">
+                    <span className="text-sm text-plum/50">+91</span>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      className="w-full bg-transparent px-2 py-2.5 text-sm outline-none"
+                      placeholder="9876543210"
+                    />
+                  </div>
+                </label>
+                {error && <p className="text-sm text-red-600">{error}</p>}
+                <button
+                  onClick={sendOtp}
+                  disabled={busy}
+                  className="w-full rounded-full bg-plum py-3 text-sm font-semibold text-ivory hover:bg-berry disabled:opacity-40"
+                >
+                  {busy ? "Sending…" : "Send OTP"}
+                </button>
+              </>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-plum">OTP</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="w-full rounded-xl border border-plum/20 bg-white px-4 py-2.5 text-center text-lg tracking-widest outline-none focus:border-brass"
+                    placeholder="••••••"
+                  />
+                </label>
+                {error && <p className="text-sm text-red-600">{error}</p>}
+                <button
+                  onClick={verifyOtp}
+                  disabled={busy || code.length < 6}
+                  className="w-full rounded-full bg-plum py-3 text-sm font-semibold text-ivory hover:bg-berry disabled:opacity-40"
+                >
+                  {busy ? "Verifying…" : "Verify & continue"}
+                </button>
+                <button
+                  onClick={() => setPhoneStep("phone")}
+                  className="w-full text-center text-sm text-plum/50 hover:text-plum"
+                >
+                  Change number
+                </button>
+              </>
+            )}
+          </div>
+          <div ref={recaptchaContainerRef} />
+        </>
+      ) : (
+        <>
+          <p className="mt-4 text-center text-sm text-plum/60">
+            {emailMode === "signin" ? "Sign in with your email and password" : "Create an account with email and password"}
+          </p>
+          <div className="mt-6 space-y-4">
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-plum">Mobile number</span>
-              <div className="flex items-center rounded-xl border border-plum/20 bg-white px-4 focus-within:border-brass">
-                <span className="text-sm text-plum/50">+91</span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  className="w-full bg-transparent px-2 py-2.5 text-sm outline-none"
-                  placeholder="9876543210"
-                />
-              </div>
-            </label>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button
-              onClick={sendOtp}
-              disabled={busy}
-              className="w-full rounded-full bg-plum py-3 text-sm font-semibold text-ivory hover:bg-berry disabled:opacity-40"
-            >
-              {busy ? "Sending…" : "Send OTP"}
-            </button>
-          </>
-        ) : (
-          <>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-plum">OTP</span>
+              <span className="mb-1 block text-sm font-medium text-plum">Email</span>
               <input
-                type="text"
-                inputMode="numeric"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="w-full rounded-xl border border-plum/20 bg-white px-4 py-2.5 text-center text-lg tracking-widest outline-none focus:border-brass"
-                placeholder="••••••"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-xl border border-plum/20 bg-white px-4 py-2.5 text-sm outline-none focus:border-brass"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-plum">Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-xl border border-plum/20 bg-white px-4 py-2.5 text-sm outline-none focus:border-brass"
               />
             </label>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
-              onClick={verifyOtp}
-              disabled={busy || code.length < 6}
+              onClick={submitEmail}
+              disabled={busy || !email || !password}
               className="w-full rounded-full bg-plum py-3 text-sm font-semibold text-ivory hover:bg-berry disabled:opacity-40"
             >
-              {busy ? "Verifying…" : "Verify & continue"}
+              {busy ? "Please wait…" : emailMode === "signin" ? "Sign in" : "Create account"}
             </button>
             <button
-              onClick={() => setStep("phone")}
+              onClick={() => { setEmailMode(emailMode === "signin" ? "signup" : "signin"); setError(""); }}
               className="w-full text-center text-sm text-plum/50 hover:text-plum"
             >
-              Change number
+              {emailMode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
             </button>
-          </>
-        )}
-      </div>
-
-      <div ref={recaptchaContainerRef} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

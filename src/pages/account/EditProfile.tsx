@@ -4,7 +4,7 @@ import { authedFetch } from "../../lib/api";
 import { AccountLayout } from "../../components/account/AccountLayout";
 
 export function EditProfile() {
-  const { getIdToken } = useAuth();
+  const { user, getIdToken } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -43,16 +43,29 @@ export function EditProfile() {
             className="w-full rounded-xl border border-plum/20 bg-white px-4 py-2.5 text-sm outline-none focus:border-brass"
           />
         </label>
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-plum">Mobile number</span>
-          <input
-            type="text"
-            value={phone}
-            disabled
-            className="w-full rounded-xl border border-plum/10 bg-plum/5 px-4 py-2.5 text-sm text-plum/50"
-          />
-          <span className="mt-1 block text-xs text-plum/40">Contact support to change your login number.</span>
-        </label>
+        {phone && (
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-plum">Mobile number</span>
+            <input
+              type="text"
+              value={phone}
+              disabled
+              className="w-full rounded-xl border border-plum/10 bg-plum/5 px-4 py-2.5 text-sm text-plum/50"
+            />
+            <span className="mt-1 block text-xs text-plum/40">Contact support to change your login number.</span>
+          </label>
+        )}
+        {user?.email && (
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-plum">Email</span>
+            <input
+              type="text"
+              value={user.email}
+              disabled
+              className="w-full rounded-xl border border-plum/10 bg-plum/5 px-4 py-2.5 text-sm text-plum/50"
+            />
+          </label>
+        )}
         <button
           onClick={save}
           disabled={status === "saving" || !name.trim()}

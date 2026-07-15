@@ -15,7 +15,8 @@ export function AccountLayout({ children }: { children: ReactNode }) {
     });
   }, [getIdToken]);
 
-  const initials = (profile?.name || user?.phoneNumber || "?").trim().charAt(0).toUpperCase();
+  const contact = profile?.phone || user?.phoneNumber || user?.email || "";
+  const initials = (profile?.name || contact || "?").trim().charAt(0).toUpperCase();
   const memberSince = profile
     ? new Date(profile.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })
     : "";
@@ -30,7 +31,7 @@ export function AccountLayout({ children }: { children: ReactNode }) {
             </div>
             <div>
               <p className="text-xl font-semibold">{profile?.name || "Your account"}</p>
-              <p className="text-sm text-ivory/70">{profile?.phone || user?.phoneNumber}</p>
+              <p className="text-sm text-ivory/70">{contact}</p>
               <div className="mt-2 flex gap-2">
                 <span className="rounded-full bg-brass/20 px-3 py-1 text-xs font-medium text-brassLite">
                   Valued Customer
