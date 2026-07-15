@@ -56,6 +56,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  orderNumber: string; // customer-facing "ORD-XXXXXXXXXXXXXXX" label
   createdAt: string;
   address: OrderAddress;
   items: OrderItem[];

@@ -28,11 +28,20 @@ interface OrderRow {
   courier_name: string | null;
   status: OrderStatus;
   user_id: string | null;
+  order_number: string | null;
+}
+
+// 15-digit timestamp+random string, shown to customers as "ORD-<this>".
+// Existing rows predating this column fall back to a shortened id.
+function generateOrderNumber(): string {
+  const rand2 = Math.floor(10 + Math.random() * 90);
+  return `${Date.now()}${rand2}`;
 }
 
 function rowToOrder(row: OrderRow): Order {
   return {
     id: row.id,
+    orderNumber: row.order_number ?? row.id.slice(0, 8).toUpperCase(),
     createdAt: row.created_at,
     address: {
       name: row.customer_name,
@@ -95,6 +104,7 @@ export async function insertOrder(input: NewOrderInput): Promise<Order> {
       payment_status: input.paymentMethod === "cod" ? "cod_pending" : "pending",
       status: "created",
       user_id: input.userId ?? null,
+      order_number: generateOrderNumber(),
     })
     .select()
     .single();

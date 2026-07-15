@@ -21,15 +21,18 @@ function rowToReturn(row: ReturnRow): ReturnRequest {
   };
 }
 
-export async function listReturnsForUser(userId: string): Promise<ReturnRequest[]> {
+export async function listReturnsForUser(userId: string): Promise<(ReturnRequest & { orderNumber: string })[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("returns")
-    .select()
+    .select("*, orders(order_number)")
     .eq("user_id", userId)
     .order("requested_at", { ascending: false });
   if (error) throw new Error(`Failed to list returns: ${error.message}`);
-  return (data as unknown as ReturnRow[]).map(rowToReturn);
+  return (data as unknown as (ReturnRow & { orders: { order_number: string | null } | null })[]).map((row) => ({
+    ...rowToReturn(row),
+    orderNumber: row.orders?.order_number ?? row.order_id.slice(0, 8).toUpperCase(),
+  }));
 }
 
 export async function createReturn(
@@ -62,18 +65,24 @@ export async function createReturn(
 
 export interface AdminReturnRow extends ReturnRequest {
   orderCustomerName: string;
+  orderNumber: string;
 }
 
 export async function listAllReturns(): Promise<AdminReturnRow[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("returns")
-    .select("*, orders(customer_name)")
+    .select("*, orders(customer_name, order_number)")
     .order("requested_at", { ascending: false });
   if (error) throw new Error(`Failed to list returns: ${error.message}`);
-  return (data as unknown as (ReturnRow & { orders: { customer_name: string } | null })[]).map((row) => ({
+  return (
+    data as unknown as (ReturnRow & {
+      orders: { customer_name: string; order_number: string | null } | null;
+    })[]
+  ).map((row) => ({
     ...rowToReturn(row),
     orderCustomerName: row.orders?.customer_name ?? "—",
+    orderNumber: row.orders?.order_number ?? row.order_id.slice(0, 8).toUpperCase(),
   }));
 }
 

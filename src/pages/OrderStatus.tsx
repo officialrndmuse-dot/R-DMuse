@@ -5,6 +5,7 @@ import { STATUS_LABEL } from "../lib/orderStatus";
 
 interface TrackedOrder {
   id: string;
+  orderNumber: string;
   createdAt: string;
   items: { name: string; price: number; qty: number }[];
   subtotal: number;
@@ -52,7 +53,7 @@ export function OrderStatus() {
       <p className="text-5xl">🪔</p>
       <h1 className="mt-4 text-4xl text-plum">Order placed!</h1>
       <p className="mt-3 text-plum/60">
-        Order <span className="font-mono">{order.id}</span> —{" "}
+        Order <span className="font-mono">ORD-{order.orderNumber}</span> —{" "}
         {STATUS_LABEL[order.status] ?? order.status}
       </p>
       {order.paymentMethod === "cod" && (

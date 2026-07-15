@@ -15,6 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.status(200).json(
     orders.map((order) => ({
       id: order.id,
+      orderNumber: order.orderNumber,
       createdAt: order.createdAt,
       items: order.items,
       total: order.total,

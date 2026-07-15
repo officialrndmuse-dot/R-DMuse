@@ -8,6 +8,7 @@ import { inr } from "../../lib/format";
 
 interface AdminOrder {
   id: string;
+  orderNumber: string;
   createdAt: string;
   address: { name: string; phone: string; email: string };
   items: { name: string; qty: number }[];
@@ -54,7 +55,7 @@ export function AdminOrders() {
                 <tr key={o.id} className="border-b border-plum/5 last:border-0">
                   <td className="p-4">
                     <Link to={`/order/${o.id}`} className="font-mono text-plum hover:underline">
-                      {o.id.slice(0, 8)}
+                      ORD-{o.orderNumber}
                     </Link>
                     <p className="text-xs text-plum/40">{new Date(o.createdAt).toLocaleDateString("en-IN")}</p>
                   </td>

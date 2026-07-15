@@ -6,6 +6,7 @@ import type { ReturnRequest, ReturnStatus } from "../../types";
 
 interface AdminReturn extends ReturnRequest {
   orderCustomerName: string;
+  orderNumber: string;
 }
 
 const STATUSES: ReturnStatus[] = ["requested", "approved", "rejected", "completed"];
@@ -44,7 +45,7 @@ export function AdminReturns() {
           {returns.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
               <div>
-                <p className="text-sm font-medium text-plum">{r.orderCustomerName} · Order {r.orderId.slice(0, 8)}</p>
+                <p className="text-sm font-medium text-plum">{r.orderCustomerName} · Order ORD-{r.orderNumber}</p>
                 <p className="text-xs text-plum/50">{r.reason}</p>
                 <p className="text-xs text-plum/40">{new Date(r.requestedAt).toLocaleString("en-IN")}</p>
               </div>

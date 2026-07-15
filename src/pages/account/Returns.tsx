@@ -6,8 +6,13 @@ import type { ReturnRequest } from "../../types";
 
 interface OrderSummary {
   id: string;
+  orderNumber: string;
   status: string;
   items: { productId: string; name: string; qty: number }[];
+}
+
+interface ReturnWithOrderNumber extends ReturnRequest {
+  orderNumber: string;
 }
 
 const RETURN_STATUS_LABEL: Record<string, string> = {
@@ -19,7 +24,7 @@ const RETURN_STATUS_LABEL: Record<string, string> = {
 
 export function Returns() {
   const { getIdToken } = useAuth();
-  const [returns, setReturns] = useState<ReturnRequest[] | null>(null);
+  const [returns, setReturns] = useState<ReturnWithOrderNumber[] | null>(null);
   const [deliveredOrders, setDeliveredOrders] = useState<OrderSummary[]>([]);
   const [orderId, setOrderId] = useState("");
   const [itemIds, setItemIds] = useState<string[]>([]);
@@ -94,7 +99,7 @@ export function Returns() {
               >
                 <option value="">Select an order…</option>
                 {deliveredOrders.map((o) => (
-                  <option key={o.id} value={o.id}>{o.id.slice(0, 8)}</option>
+                  <option key={o.id} value={o.id}>ORD-{o.orderNumber}</option>
                 ))}
               </select>
             </label>
@@ -146,7 +151,7 @@ export function Returns() {
             {returns.map((r) => (
               <li key={r.id} className="flex items-center justify-between p-4">
                 <div>
-                  <p className="text-sm text-plum">Order {r.orderId.slice(0, 8)}</p>
+                  <p className="text-sm text-plum">Order ORD-{r.orderNumber}</p>
                   <p className="text-xs text-plum/50">{r.reason}</p>
                 </div>
                 <span className="rounded-full bg-blush/30 px-3 py-1 text-xs text-plum">

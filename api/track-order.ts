@@ -22,6 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Whitelist client-safe fields only.
   res.status(200).json({
     id: order.id,
+    orderNumber: order.orderNumber,
     createdAt: order.createdAt,
     items: order.items,
     subtotal: order.subtotal,

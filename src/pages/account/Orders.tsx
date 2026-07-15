@@ -8,6 +8,7 @@ import { inr } from "../../lib/format";
 
 interface OrderSummary {
   id: string;
+  orderNumber: string;
   createdAt: string;
   total: number;
   status: string;
@@ -45,7 +46,7 @@ export function Orders() {
             <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 p-4">
               <div>
                 <Link to={`/order/${o.id}`} className="font-mono text-sm text-plum hover:underline">
-                  {o.id.slice(0, 8)}
+                  ORD-{o.orderNumber}
                 </Link>
                 <p className="text-xs text-plum/50">
                   {new Date(o.createdAt).toLocaleDateString("en-IN")} ·{" "}

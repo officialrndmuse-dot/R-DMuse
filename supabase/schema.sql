@@ -146,3 +146,8 @@ create index if not exists orders_user_id_idx on orders(user_id);
 -- Added after the initial profiles table shipped; `create table if not
 -- exists` above won't add this to an already-existing table.
 alter table profiles add column if not exists email text;
+
+-- Customer-facing order number ("ORD-XXXXXXXXXXXXXXX"), distinct from the
+-- internal uuid `id` used for URLs/lookups. Generated in api/_lib/orders.ts
+-- at insert time, not by a DB default.
+alter table orders add column if not exists order_number text unique;
