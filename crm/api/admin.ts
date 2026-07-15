@@ -11,8 +11,8 @@ const VALID_STATUSES: ReturnStatus[] = ["requested", "approved", "rejected", "co
 const adminEmails = () =>
   (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 
-// Single admin-area endpoint, keyed by ?resource= (instead of separate
-// files) to stay under Vercel's Hobby-plan 12-serverless-function cap.
+// Single endpoint, keyed by ?resource=, mirroring the pattern proven in the
+// storefront's own admin API before this was split into its own app.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const resource = typeof req.query.resource === "string" ? req.query.resource : "";
 

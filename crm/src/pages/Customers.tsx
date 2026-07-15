@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { authedFetch } from "../../lib/api";
-import { AdminLayout } from "../../components/admin/AdminLayout";
-import { inr } from "../../lib/format";
-import type { CustomerSummary } from "../../types";
+import { useAuth } from "../context/AuthContext";
+import { authedFetch } from "../lib/api";
+import { AdminLayout } from "../components/AdminLayout";
+import { inr } from "../lib/format";
+import type { CustomerSummary } from "../types";
 
-export function AdminCustomers() {
+export function Customers() {
   const { getIdToken } = useAuth();
   const [customers, setCustomers] = useState<CustomerSummary[] | null>(null);
 
@@ -41,7 +41,7 @@ export function AdminCustomers() {
               {customers.map((c) => (
                 <tr key={c.id} className="border-b border-plum/5 last:border-0">
                   <td className="p-4">
-                    <Link to={`/admin/customers/${c.id}`} className="font-medium text-plum hover:underline">
+                    <Link to={`/customers/${c.id}`} className="font-medium text-plum hover:underline">
                       {c.name || "—"}
                     </Link>
                   </td>

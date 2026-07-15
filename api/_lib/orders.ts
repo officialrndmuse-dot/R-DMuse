@@ -132,14 +132,6 @@ export async function listOrdersForUser(userId: string): Promise<Order[]> {
   return (data as unknown as OrderRow[]).map(rowToOrder);
 }
 
-// Admin-only: every order ever placed, guest or signed-in.
-export async function listAllOrders(): Promise<Order[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.from("orders").select().order("created_at", { ascending: false });
-  if (error) throw new Error(`Failed to list orders: ${error.message}`);
-  return (data as unknown as OrderRow[]).map(rowToOrder);
-}
-
 // Attaches any prior guest orders (placed with no account) to this user,
 // matched by phone number. orders.customer_phone is a bare 10-digit number
 // (see api/_lib/validate.ts); the auth phone is E.164 (+91XXXXXXXXXX).

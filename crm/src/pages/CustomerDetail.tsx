@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { authedFetch } from "../../lib/api";
-import { AdminLayout } from "../../components/admin/AdminLayout";
-import { STATUS_LABEL } from "../../lib/orderStatus";
-import { inr } from "../../lib/format";
-import type { Profile, Order, Address } from "../../types";
+import { useAuth } from "../context/AuthContext";
+import { authedFetch } from "../lib/api";
+import { AdminLayout } from "../components/AdminLayout";
+import { STATUS_LABEL } from "../lib/orderStatus";
+import { inr } from "../lib/format";
+import { STOREFRONT_URL } from "../lib/config";
+import type { Profile, Order, Address } from "../types";
 
 interface CustomerDetailResponse {
   profile: Profile;
@@ -13,7 +14,7 @@ interface CustomerDetailResponse {
   addresses: Address[];
 }
 
-export function AdminCustomerDetail() {
+export function CustomerDetail() {
   const { id } = useParams();
   const { getIdToken } = useAuth();
   const [data, setData] = useState<CustomerDetailResponse | null>(null);
@@ -30,7 +31,7 @@ export function AdminCustomerDetail() {
 
   return (
     <AdminLayout>
-      <Link to="/admin/customers" className="text-sm text-plum/60 hover:text-plum">← Customers</Link>
+      <Link to="/customers" className="text-sm text-plum/60 hover:text-plum">← Customers</Link>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
@@ -53,9 +54,14 @@ export function AdminCustomerDetail() {
                 {data.orders.map((o) => (
                   <li key={o.id} className="flex items-center justify-between p-4">
                     <div>
-                      <Link to={`/order/${o.id}`} className="font-mono text-sm text-plum hover:underline">
+                      <a
+                        href={`${STOREFRONT_URL}/order/${o.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-sm text-plum hover:underline"
+                      >
                         ORD-{o.orderNumber}
-                      </Link>
+                      </a>
                       <p className="text-xs text-plum/50">{new Date(o.createdAt).toLocaleDateString("en-IN")}</p>
                     </div>
                     <div className="text-right">

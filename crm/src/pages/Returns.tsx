@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { authedFetch } from "../../lib/api";
-import { AdminLayout } from "../../components/admin/AdminLayout";
-import type { ReturnRequest, ReturnStatus } from "../../types";
+import { useAuth } from "../context/AuthContext";
+import { authedFetch } from "../lib/api";
+import { AdminLayout } from "../components/AdminLayout";
+import type { ReturnRequest, ReturnStatus } from "../types";
 
 interface AdminReturn extends ReturnRequest {
   orderCustomerName: string;
@@ -11,7 +11,7 @@ interface AdminReturn extends ReturnRequest {
 
 const STATUSES: ReturnStatus[] = ["requested", "approved", "rejected", "completed"];
 
-export function AdminReturns() {
+export function Returns() {
   const { getIdToken } = useAuth();
   const [returns, setReturns] = useState<AdminReturn[] | null>(null);
 

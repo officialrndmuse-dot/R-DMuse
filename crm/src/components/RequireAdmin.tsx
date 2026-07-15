@@ -26,7 +26,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     return <div className="mx-auto max-w-3xl px-4 py-24 text-center text-plum/60">Loading…</div>;
   }
   if (status === "signedOut" || isAdmin === false) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 }

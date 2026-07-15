@@ -15,8 +15,6 @@ function extractToken(req: VercelRequest): string | null {
 }
 
 // Verifies the Bearer token (a Supabase Auth session JWT) if present.
-// Returns null if missing/invalid — callers decide whether that's fatal
-// (e.g. create-order allows anonymous).
 export async function getAuthedUser(req: VercelRequest): Promise<AuthedUser | null> {
   const token = extractToken(req);
   if (!token) return null;
@@ -33,6 +31,30 @@ export async function requireAuthedUser(
   const user = await getAuthedUser(req);
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
+    return null;
+  }
+  return user;
+}
+
+function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+// Every route in this app is admin-only, so this is the primary guard used
+// throughout — there is no non-admin authenticated user in this CRM.
+export async function requireAdmin(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<AuthedUser | null> {
+  const user = await requireAuthedUser(req, res);
+  if (!user) return null; // requireAuthedUser already responded
+
+  const allowed = adminEmails();
+  if (!user.email || !allowed.includes(user.email.toLowerCase())) {
+    res.status(403).json({ error: "Not authorized" });
     return null;
   }
   return user;

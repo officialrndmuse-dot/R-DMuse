@@ -1,31 +1,4 @@
-// ---- Core data models ----
-
-export type Category = "bags" | "earrings" | "festive" | "hair" | "bangles";
-
-export interface Product {
-  id: string;
-  name: string;
-  category: Category;
-  price: number;        // in INR (₹)
-  mrp?: number;         // optional strike-through price
-  image: string;        // image URL or /public path
-  rating: number;       // 0–5
-  stock: number;        // units available
-  tags: string[];
-  description: string;
-  sku?: string;         // falls back to `id` if absent
-  weightKg?: number;    // falls back to a default via getShippingDims()
-  lengthCm?: number;
-  breadthCm?: number;
-  heightCm?: number;
-}
-
-export interface CartItem {
-  product: Product;
-  qty: number;
-}
-
-// ---- Orders (checkout / Shiprocket / Razorpay) ----
+// Subset of the storefront's types.ts — only what the CRM reads/displays.
 
 export type PaymentMethod = "razorpay" | "cod";
 export type PaymentStatus = "pending" | "paid" | "failed" | "cod_pending";
@@ -39,7 +12,7 @@ export interface OrderAddress {
   city: string;
   state: string;
   pincode: string;
-  country: string; // default "India"
+  country: string;
 }
 
 export interface OrderItem {
@@ -56,7 +29,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  orderNumber: string; // customer-facing "ORD-XXXXXXXXXXXXXXX" label
+  orderNumber: string;
   createdAt: string;
   address: OrderAddress;
   items: OrderItem[];
@@ -73,10 +46,8 @@ export interface Order {
   awbCode?: string;
   courierName?: string;
   status: OrderStatus;
-  userId?: string; // Supabase Auth uid, if placed while signed in
+  userId?: string;
 }
-
-// ---- Customer accounts ----
 
 export interface Profile {
   id: string; // Supabase Auth uid
@@ -99,12 +70,6 @@ export interface Address {
   isDefault: boolean;
 }
 
-export interface WishlistItem {
-  id: string;
-  productId: string;
-  createdAt: string;
-}
-
 export type ReturnStatus = "requested" | "approved" | "rejected" | "completed";
 
 export interface ReturnRequest {
@@ -116,14 +81,13 @@ export interface ReturnRequest {
   requestedAt: string;
 }
 
-export interface BlogPost {
+export interface CustomerSummary {
   id: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  body: string;         // simple paragraphs separated by \n\n
-  cover: string;
-  author: string;
-  date: string;         // ISO date
-  tags: string[];
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  orderCount: number;
+  totalSpent: number;
+  lastOrderAt: string | null;
+  joinedAt: string;
 }

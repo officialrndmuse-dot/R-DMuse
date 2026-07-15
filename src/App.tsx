@@ -12,7 +12,6 @@ import { Blog } from "./pages/Blog";
 import { BlogPost } from "./pages/BlogPost";
 import { About } from "./pages/About";
 import { RequireAuth } from "./components/RequireAuth";
-import { RequireAdmin } from "./components/RequireAdmin";
 import { Login as AccountLogin } from "./pages/account/Login";
 import { Overview } from "./pages/account/Overview";
 import { Orders } from "./pages/account/Orders";
@@ -21,11 +20,6 @@ import { Wishlist } from "./pages/account/Wishlist";
 import { EditProfile } from "./pages/account/EditProfile";
 import { Support } from "./pages/account/Support";
 import { Returns } from "./pages/account/Returns";
-import { AdminLogin } from "./pages/admin/Login";
-import { AdminReturns } from "./pages/admin/Returns";
-import { AdminOrders } from "./pages/admin/Orders";
-import { AdminCustomers } from "./pages/admin/Customers";
-import { AdminCustomerDetail } from "./pages/admin/CustomerDetail";
 
 // Scroll to top whenever the route changes
 function ScrollToTop() {
@@ -59,12 +53,6 @@ export default function App() {
           <Route path="/account/wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
           <Route path="/account/profile" element={<RequireAuth><EditProfile /></RequireAuth>} />
           <Route path="/account/returns" element={<RequireAuth><Returns /></RequireAuth>} />
-
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/orders" element={<RequireAdmin><AdminOrders /></RequireAdmin>} />
-          <Route path="/admin/customers" element={<RequireAdmin><AdminCustomers /></RequireAdmin>} />
-          <Route path="/admin/customers/:id" element={<RequireAdmin><AdminCustomerDetail /></RequireAdmin>} />
-          <Route path="/admin/returns" element={<RequireAdmin><AdminReturns /></RequireAdmin>} />
 
           <Route path="*" element={
             <div className="mx-auto max-w-3xl px-4 py-24 text-center">
