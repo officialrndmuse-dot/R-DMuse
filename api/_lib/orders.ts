@@ -124,9 +124,9 @@ export async function listOrdersForUser(userId: string): Promise<Order[]> {
 
 // Attaches any prior guest orders (placed with no account) to this user,
 // matched by phone number. orders.customer_phone is a bare 10-digit number
-// (see api/_lib/validate.ts); Firebase phone is E.164 (+91XXXXXXXXXX).
-export async function claimGuestOrders(userId: string, firebasePhone: string): Promise<number> {
-  const barePhone = firebasePhone.replace(/^\+91/, "");
+// (see api/_lib/validate.ts); the auth phone is E.164 (+91XXXXXXXXXX).
+export async function claimGuestOrders(userId: string, authPhone: string): Promise<number> {
+  const barePhone = authPhone.replace(/^\+91/, "");
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("orders")

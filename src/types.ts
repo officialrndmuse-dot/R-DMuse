@@ -72,13 +72,13 @@ export interface Order {
   awbCode?: string;
   courierName?: string;
   status: OrderStatus;
-  userId?: string; // Firebase uid, if placed while signed in
+  userId?: string; // Supabase Auth uid, if placed while signed in
 }
 
 // ---- Customer accounts ----
 
 export interface Profile {
-  id: string; // Firebase uid
+  id: string; // Supabase Auth uid
   name: string | null;
   phone: string | null;
   createdAt: string;

@@ -1,5 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyFirebaseToken, type VerifiedFirebaseUser } from "./firebase.js";
+import { getSupabase } from "./supabase.js";
+
+export interface AuthedUser {
+  uid: string;
+  phone: string | null;
+  email: string | null;
+}
 
 function extractToken(req: VercelRequest): string | null {
   const header = req.headers.authorization;
@@ -8,18 +14,22 @@ function extractToken(req: VercelRequest): string | null {
   return token || null;
 }
 
-// Verifies the Bearer token if present. Returns null if missing/invalid —
-// callers decide whether that's fatal (e.g. create-order allows anonymous).
-export async function getAuthedUser(req: VercelRequest): Promise<VerifiedFirebaseUser | null> {
+// Verifies the Bearer token (a Supabase Auth session JWT) if present.
+// Returns null if missing/invalid — callers decide whether that's fatal
+// (e.g. create-order allows anonymous).
+export async function getAuthedUser(req: VercelRequest): Promise<AuthedUser | null> {
   const token = extractToken(req);
   if (!token) return null;
-  return verifyFirebaseToken(token);
+
+  const { data, error } = await getSupabase().auth.getUser(token);
+  if (error || !data?.user) return null;
+  return { uid: data.user.id, phone: data.user.phone ?? null, email: data.user.email ?? null };
 }
 
 export async function requireAuthedUser(
   req: VercelRequest,
   res: VercelResponse
-): Promise<VerifiedFirebaseUser | null> {
+): Promise<AuthedUser | null> {
   const user = await getAuthedUser(req);
   if (!user) {
     res.status(401).json({ error: "Not authenticated" });
@@ -38,7 +48,7 @@ function adminEmails(): string[] {
 export async function requireAdmin(
   req: VercelRequest,
   res: VercelResponse
-): Promise<VerifiedFirebaseUser | null> {
+): Promise<AuthedUser | null> {
   const user = await requireAuthedUser(req, res);
   if (!user) return null; // requireAuthedUser already responded
 

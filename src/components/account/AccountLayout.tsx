@@ -15,7 +15,7 @@ export function AccountLayout({ children }: { children: ReactNode }) {
     });
   }, [getIdToken]);
 
-  const contact = profile?.phone || user?.phoneNumber || user?.email || "";
+  const contact = profile?.phone || user?.phone || user?.email || "";
   const initials = (profile?.name || contact || "?").trim().charAt(0).toUpperCase();
   const memberSince = profile
     ? new Date(profile.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })

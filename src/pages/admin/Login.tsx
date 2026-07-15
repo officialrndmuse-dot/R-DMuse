@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { firebaseAuth } from "../../lib/firebaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 export function AdminLogin() {
   const navigate = useNavigate();
@@ -14,8 +13,9 @@ export function AdminLogin() {
     setError("");
     setBusy(true);
     try {
-      if (!firebaseAuth) throw new Error("not-configured");
-      await signInWithEmailAndPassword(firebaseAuth, email, password);
+      if (!supabase) throw new Error("not-configured");
+      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (err) throw err;
       navigate("/admin/returns", { replace: true });
     } catch (err) {
       setError(
@@ -31,6 +31,9 @@ export function AdminLogin() {
   return (
     <div className="mx-auto max-w-md px-4 py-24">
       <h1 className="text-center text-3xl text-plum">Admin sign in</h1>
+      <p className="mt-2 text-center text-xs text-plum/50">
+        Sign in with an account whose email is on the admin allow-list.
+      </p>
       <div className="mt-8 space-y-4">
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-plum">Email</span>

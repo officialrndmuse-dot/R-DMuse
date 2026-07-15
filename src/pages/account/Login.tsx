@@ -1,10 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  RecaptchaVerifier, signInWithPhoneNumber, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, type ConfirmationResult,
-} from "firebase/auth";
-import { firebaseAuth } from "../../lib/firebaseClient";
+import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../context/AuthContext";
 
 const PHONE_RE = /^[6-9]\d{9}$/;
@@ -26,8 +22,6 @@ export function Login() {
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
-  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   // Email/password state
   const [emailMode, setEmailMode] = useState<EmailMode>("signin");
@@ -54,12 +48,9 @@ export function Login() {
     }
     setBusy(true);
     try {
-      if (!firebaseAuth) throw new Error("Sign-in isn't set up yet — please check back soon");
-      if (!recaptchaContainerRef.current) throw new Error("Recaptcha not ready");
-      const verifier = new RecaptchaVerifier(firebaseAuth, recaptchaContainerRef.current, {
-        size: "invisible",
-      });
-      confirmationRef.current = await signInWithPhoneNumber(firebaseAuth, `+91${phone}`, verifier);
+      if (!supabase) throw new Error("Sign-in isn't set up yet — please check back soon");
+      const { error: err } = await supabase.auth.signInWithOtp({ phone: `+91${phone}` });
+      if (err) throw err;
       setPhoneStep("otp");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send OTP");
@@ -70,14 +61,15 @@ export function Login() {
 
   const verifyOtp = async () => {
     setError("");
-    if (!confirmationRef.current) {
-      setError("Please request the OTP again");
-      setPhoneStep("phone");
-      return;
-    }
     setBusy(true);
     try {
-      await confirmationRef.current.confirm(code);
+      if (!supabase) throw new Error("Sign-in isn't set up yet — please check back soon");
+      const { error: err } = await supabase.auth.verifyOtp({
+        phone: `+91${phone}`,
+        token: code,
+        type: "sms",
+      });
+      if (err) throw err;
       // Navigation happens via the useEffect above once auth state updates.
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid OTP");
@@ -98,21 +90,20 @@ export function Login() {
     }
     setBusy(true);
     try {
-      if (!firebaseAuth) throw new Error("Sign-in isn't set up yet — please check back soon");
-      if (emailMode === "signup") {
-        await createUserWithEmailAndPassword(firebaseAuth, email, password);
-      } else {
-        await signInWithEmailAndPassword(firebaseAuth, email, password);
-      }
+      if (!supabase) throw new Error("Sign-in isn't set up yet — please check back soon");
+      const { error: err } =
+        emailMode === "signup"
+          ? await supabase.auth.signUp({ email, password })
+          : await supabase.auth.signInWithPassword({ email, password });
+      if (err) throw err;
       // Navigation happens via the useEffect above once auth state updates.
     } catch (err) {
-      const code = (err as { code?: string })?.code;
-      const message =
-        code === "auth/email-already-in-use" ? "An account already exists with this email — try signing in instead."
-        : code === "auth/invalid-credential" || code === "auth/wrong-password" ? "Incorrect email or password."
-        : code === "auth/user-not-found" ? "No account found with this email — try creating one instead."
-        : err instanceof Error ? err.message : "Something went wrong";
-      setError(message);
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(
+        message.includes("already registered") ? "An account already exists with this email — try signing in instead."
+        : message.includes("Invalid login credentials") ? "Incorrect email or password."
+        : message
+      );
     } finally {
       setBusy(false);
     }
@@ -201,7 +192,6 @@ export function Login() {
               </>
             )}
           </div>
-          <div ref={recaptchaContainerRef} />
         </>
       ) : (
         <>
