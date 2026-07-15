@@ -27,6 +27,7 @@ interface OrderRow {
   awb_code: string | null;
   courier_name: string | null;
   status: OrderStatus;
+  user_id: string | null;
 }
 
 function rowToOrder(row: OrderRow): Order {
@@ -57,6 +58,7 @@ function rowToOrder(row: OrderRow): Order {
     awbCode: row.awb_code ?? undefined,
     courierName: row.courier_name ?? undefined,
     status: row.status,
+    userId: row.user_id ?? undefined,
   };
 }
 
@@ -68,6 +70,7 @@ export interface NewOrderInput {
   tax: number;
   total: number;
   paymentMethod: PaymentMethod;
+  userId?: string;
 }
 
 export async function insertOrder(input: NewOrderInput): Promise<Order> {
@@ -91,6 +94,7 @@ export async function insertOrder(input: NewOrderInput): Promise<Order> {
       payment_method: input.paymentMethod,
       payment_status: input.paymentMethod === "cod" ? "cod_pending" : "pending",
       status: "created",
+      user_id: input.userId ?? null,
     })
     .select()
     .single();
@@ -105,6 +109,33 @@ export async function getOrder(orderId: string): Promise<Order | null> {
   if (error) throw new Error(`Failed to fetch order: ${error.message}`);
   if (!data) return null;
   return rowToOrder(data as unknown as OrderRow);
+}
+
+export async function listOrdersForUser(userId: string): Promise<Order[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("orders")
+    .select()
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Failed to list orders: ${error.message}`);
+  return (data as unknown as OrderRow[]).map(rowToOrder);
+}
+
+// Attaches any prior guest orders (placed with no account) to this user,
+// matched by phone number. orders.customer_phone is a bare 10-digit number
+// (see api/_lib/validate.ts); Firebase phone is E.164 (+91XXXXXXXXXX).
+export async function claimGuestOrders(userId: string, firebasePhone: string): Promise<number> {
+  const barePhone = firebasePhone.replace(/^\+91/, "");
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("orders")
+    .update({ user_id: userId })
+    .eq("customer_phone", barePhone)
+    .is("user_id", null)
+    .select("id");
+  if (error) throw new Error(`Failed to claim orders: ${error.message}`);
+  return data?.length ?? 0;
 }
 
 export async function setRazorpayOrderId(orderId: string, razorpayOrderId: string): Promise<void> {

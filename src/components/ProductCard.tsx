@@ -1,12 +1,28 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { Product } from "../types";
 import { inr } from "../lib/format";
 import { Stars } from "./Stars";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "../context/AuthContext";
 
 export function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
+  const { has, toggle } = useWishlist();
+  const { status } = useAuth();
+  const navigate = useNavigate();
   const soldOut = product.stock <= 0;
+  const wishlisted = has(product.id);
+
+  const onWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (status !== "signedIn") {
+      navigate("/account/login");
+      return;
+    }
+    toggle(product.id);
+  };
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-xl2 bg-white shadow-soft">
@@ -27,6 +43,14 @@ export function ProductCard({ product }: { product: Product }) {
             Sold out
           </span>
         )}
+        <button
+          type="button"
+          onClick={onWishlistClick}
+          aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-lg shadow-soft"
+        >
+          {wishlisted ? "♥" : "♡"}
+        </button>
       </Link>
 
       <div className="flex flex-1 flex-col p-4">

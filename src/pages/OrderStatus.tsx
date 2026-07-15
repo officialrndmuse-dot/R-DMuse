@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { inr } from "../lib/format";
+import { STATUS_LABEL } from "../lib/orderStatus";
 
 interface TrackedOrder {
   id: string;
@@ -16,14 +17,6 @@ interface TrackedOrder {
   awbCode?: string;
   courierName?: string;
 }
-
-const STATUS_LABEL: Record<string, string> = {
-  created: "Order received",
-  confirmed: "Confirmed — preparing for shipment",
-  shipped: "Shipped",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
 
 export function OrderStatus() {
   const { id } = useParams();

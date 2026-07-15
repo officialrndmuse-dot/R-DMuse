@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useProduct } from "../hooks/useProducts";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "../context/AuthContext";
 import { inr } from "../lib/format";
 import { Stars } from "../components/Stars";
 import { QuantityStepper } from "../components/QuantityStepper";
@@ -10,6 +12,9 @@ export function ProductDetail() {
   const { id } = useParams();
   const product = useProduct(id);
   const { add } = useCart();
+  const { has, toggle } = useWishlist();
+  const { status } = useAuth();
+  const navigate = useNavigate();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -25,11 +30,20 @@ export function ProductDetail() {
   }
 
   const soldOut = product.stock <= 0;
+  const wishlisted = has(product.id);
 
   const handleAdd = () => {
     add(product, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
+  };
+
+  const handleWishlist = () => {
+    if (status !== "signedIn") {
+      navigate("/account/login");
+      return;
+    }
+    toggle(product.id);
   };
 
   return (
@@ -70,6 +84,14 @@ export function ProductDetail() {
                 className="rounded-full bg-plum px-8 py-3 text-sm font-semibold text-ivory hover:bg-berry"
               >
                 {added ? "Added ✓" : "Add to cart"}
+              </button>
+              <button
+                type="button"
+                onClick={handleWishlist}
+                aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                className="grid h-11 w-11 place-items-center rounded-full border border-plum/20 text-lg hover:border-brass"
+              >
+                {wishlisted ? "♥" : "♡"}
               </button>
             </div>
           )}

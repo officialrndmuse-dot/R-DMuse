@@ -5,6 +5,7 @@ import { resolveOrderItems } from "./_lib/cart.js";
 import { insertOrder, setRazorpayOrderId, markShipmentCreated } from "./_lib/orders.js";
 import { createShiprocketOrder } from "./_lib/shiprocket.js";
 import { createRazorpayOrder } from "./_lib/razorpay.js";
+import { getAuthedUser } from "./_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -20,6 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const paymentMethod = body.paymentMethod === "razorpay" ? "razorpay" : "cod";
 
+    // Optional — guest checkout (no Authorization header) is unaffected.
+    const authedUser = await getAuthedUser(req);
+
     const order = await insertOrder({
       address,
       items,
@@ -28,6 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tax,
       total,
       paymentMethod,
+      userId: authedUser?.uid,
     });
 
     if (paymentMethod === "razorpay") {

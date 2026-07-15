@@ -56,3 +56,82 @@ drop trigger if exists orders_set_updated_at on orders;
 create trigger orders_set_updated_at
   before update on orders
   for each row execute function set_updated_at();
+
+-- ---- Customer accounts ----
+-- Identity comes from Firebase Auth (not Supabase Auth), so user_id columns
+-- are plain text (Firebase uid strings) with no FK into any Supabase auth
+-- schema. Same security model as `orders`: RLS enabled, zero public
+-- policies. All access happens server-side via the service-role key after
+-- the caller's Firebase ID token has been verified in api/_lib/auth.ts.
+
+create table if not exists profiles (
+  id text primary key, -- Firebase uid
+  name text,
+  phone text,          -- cached from the Firebase user at first login
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table profiles enable row level security;
+
+create table if not exists addresses (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  label text,
+  name text not null,
+  phone text not null,
+  address_line text not null,
+  city text not null,
+  state text not null,
+  pincode text not null,
+  country text not null default 'India',
+  is_default boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists addresses_user_id_idx on addresses(user_id);
+alter table addresses enable row level security;
+
+create table if not exists wishlist (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  product_id text not null, -- references src/data/products.ts, not a DB FK
+  created_at timestamptz not null default now(),
+  unique (user_id, product_id)
+);
+create index if not exists wishlist_user_id_idx on wishlist(user_id);
+alter table wishlist enable row level security;
+
+create type return_status as enum ('requested', 'approved', 'rejected', 'completed');
+
+create table if not exists returns (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete cascade,
+  user_id text,
+  reason text not null,
+  item_ids text[],  -- null/empty = whole-order return
+  status return_status not null default 'requested',
+  requested_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists returns_order_id_idx on returns(order_id);
+create index if not exists returns_user_id_idx on returns(user_id);
+alter table returns enable row level security;
+
+drop trigger if exists profiles_set_updated_at on profiles;
+create trigger profiles_set_updated_at
+  before update on profiles
+  for each row execute function set_updated_at();
+
+drop trigger if exists addresses_set_updated_at on addresses;
+create trigger addresses_set_updated_at
+  before update on addresses
+  for each row execute function set_updated_at();
+
+drop trigger if exists returns_set_updated_at on returns;
+create trigger returns_set_updated_at
+  before update on returns
+  for each row execute function set_updated_at();
+
+-- Ties orders to accounts; nullable so guest checkout keeps working unchanged.
+alter table orders add column if not exists user_id text;
+create index if not exists orders_user_id_idx on orders(user_id);

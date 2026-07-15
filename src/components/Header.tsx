@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 const nav = [
   { to: "/", label: "Home", end: true },
@@ -10,6 +11,7 @@ const nav = [
 
 export function Header() {
   const { count } = useCart();
+  const { status } = useAuth();
   return (
     <header className="sticky top-0 z-40 border-b border-plum/10 bg-ivory/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
@@ -36,17 +38,30 @@ export function Header() {
           ))}
         </nav>
 
-        <Link
-          to="/cart"
-          className="relative rounded-full bg-plum px-4 py-2 text-sm font-medium text-ivory hover:bg-berry"
-        >
-          Cart
-          {count > 0 && (
-            <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-brass text-[11px] font-bold text-plum">
-              {count}
-            </span>
-          )}
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            to={status === "signedIn" ? "/account" : "/account/login"}
+            aria-label="Account"
+            className="grid h-9 w-9 place-items-center rounded-full text-plum/70 hover:bg-plum/5 hover:text-plum"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" />
+            </svg>
+          </Link>
+
+          <Link
+            to="/cart"
+            className="relative rounded-full bg-plum px-4 py-2 text-sm font-medium text-ivory hover:bg-berry"
+          >
+            Cart
+            {count > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-brass text-[11px] font-bold text-plum">
+                {count}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
     </header>
   );

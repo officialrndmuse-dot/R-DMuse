@@ -72,6 +72,46 @@ export interface Order {
   awbCode?: string;
   courierName?: string;
   status: OrderStatus;
+  userId?: string; // Firebase uid, if placed while signed in
+}
+
+// ---- Customer accounts ----
+
+export interface Profile {
+  id: string; // Firebase uid
+  name: string | null;
+  phone: string | null;
+  createdAt: string;
+}
+
+export interface Address {
+  id: string;
+  label?: string;
+  name: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  isDefault: boolean;
+}
+
+export interface WishlistItem {
+  id: string;
+  productId: string;
+  createdAt: string;
+}
+
+export type ReturnStatus = "requested" | "approved" | "rejected" | "completed";
+
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  reason: string;
+  itemIds?: string[];
+  status: ReturnStatus;
+  requestedAt: string;
 }
 
 export interface BlogPost {

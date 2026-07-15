@@ -4,6 +4,8 @@ import { useCart } from "../context/CartContext";
 import { inr } from "../lib/format";
 import { computeOrderTotals } from "../lib/pricing";
 import { useRazorpayScript } from "../hooks/useRazorpayScript";
+import { useAuth } from "../context/AuthContext";
+import { authedFetch } from "../lib/api";
 import type { ChangeEvent, ChangeEventHandler } from "react";
 import type { PaymentMethod } from "../types";
 
@@ -15,6 +17,7 @@ type Status = "idle" | "submitting" | "awaiting-payment" | "error";
 
 export function Checkout() {
   const { items, subtotal, clear } = useCart();
+  const { getIdToken } = useAuth();
   const navigate = useNavigate();
   const razorpayReady = useRazorpayScript();
   const [status, setStatus] = useState<Status>("idle");
@@ -49,9 +52,9 @@ export function Checkout() {
     setStatus("submitting");
     setErrorMsg("");
     try {
-      const res = await fetch("/api/create-order", {
+      const idToken = await getIdToken();
+      const res = await authedFetch("/api/create-order", idToken, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           address: form,
           items: items.map(({ product, qty }) => ({ productId: product.id, qty })),
