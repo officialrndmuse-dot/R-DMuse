@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { requireAuthedUser } from "../_lib/auth.js";
 import { getOrCreateProfile, updateProfileName } from "../_lib/profiles.js";
+import { claimGuestOrders } from "../_lib/orders.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await requireAuthedUser(req, res);
@@ -8,6 +9,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === "GET") {
     const profile = await getOrCreateProfile(user);
+    // Idempotent — attaches any prior guest orders placed with the same
+    // phone number. Cheap enough to run on every profile fetch (folded in
+    // here instead of a separate endpoint to stay under Vercel's Hobby-plan
+    // 12-serverless-function cap).
+    if (user.phone) claimGuestOrders(user.uid, user.phone).catch(() => {});
     res.status(200).json(profile);
     return;
   }

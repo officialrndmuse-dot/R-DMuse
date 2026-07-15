@@ -43,7 +43,7 @@ export function Addresses() {
   const save = async () => {
     setError("");
     const idToken = await getIdToken();
-    const path = editingId ? `/api/account/addresses/${editingId}` : "/api/account/addresses";
+    const path = editingId ? `/api/account/addresses?id=${editingId}` : "/api/account/addresses";
     const res = await authedFetch(path, idToken, { method: editingId ? "PUT" : "POST", body: JSON.stringify(form) });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -56,7 +56,7 @@ export function Addresses() {
 
   const remove = async (id: string) => {
     const idToken = await getIdToken();
-    await authedFetch(`/api/account/addresses/${id}`, idToken, { method: "DELETE" });
+    await authedFetch(`/api/account/addresses?id=${id}`, idToken, { method: "DELETE" });
     load();
   };
 

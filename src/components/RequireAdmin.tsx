@@ -13,7 +13,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     }
     let cancelled = false;
     getIdToken().then(async (idToken) => {
-      const res = await fetch("/api/admin/whoami", { headers: { Authorization: `Bearer ${idToken}` } });
+      const res = await fetch("/api/admin?resource=whoami", { headers: { Authorization: `Bearer ${idToken}` } });
       const data = await res.json().catch(() => ({ isAdmin: false }));
       if (!cancelled) setIsAdmin(res.ok && data.isAdmin === true);
     });

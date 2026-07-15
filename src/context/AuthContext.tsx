@@ -1,5 +1,5 @@
 import {
-  createContext, useContext, useEffect, useMemo, useRef, useState,
+  createContext, useContext, useEffect, useMemo, useState,
   type ReactNode,
 } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
@@ -19,29 +19,18 @@ const AuthContext = createContext<AuthValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
-  const claimedRef = useRef(false);
 
   useEffect(() => {
     if (!firebaseAuth) {
       setStatus("signedOut");
       return;
     }
+    // Attaching prior guest orders (by phone match) happens server-side as
+    // a side effect of GET /api/account/profile, which AccountLayout calls
+    // on every account page mount — no separate call needed here.
     const unsubscribe = onAuthStateChanged(firebaseAuth, (u) => {
       setUser(u);
       setStatus(u ? "signedIn" : "signedOut");
-
-      // Idempotent server-side call to attach any prior guest orders placed
-      // with the same phone number — safe to call more than once.
-      if (u && !claimedRef.current) {
-        claimedRef.current = true;
-        u.getIdToken().then((idToken) => {
-          fetch("/api/account/claim-orders", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${idToken}` },
-          }).catch(() => {});
-        });
-      }
-      if (!u) claimedRef.current = false;
     });
     return unsubscribe;
   }, []);

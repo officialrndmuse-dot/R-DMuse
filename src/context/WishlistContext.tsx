@@ -49,7 +49,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         });
 
         if (isWishlisted) {
-          await authedFetch(`/api/account/wishlist/${productId}`, idToken, { method: "DELETE" });
+          await authedFetch(`/api/account/wishlist?id=${productId}`, idToken, { method: "DELETE" });
         } else {
           await authedFetch("/api/account/wishlist", idToken, {
             method: "POST",

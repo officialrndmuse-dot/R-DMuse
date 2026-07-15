@@ -15,7 +15,7 @@ export function AdminReturns() {
 
   const load = async () => {
     const idToken = await getIdToken();
-    const res = await authedFetch("/api/admin/returns", idToken);
+    const res = await authedFetch("/api/admin?resource=returns", idToken);
     if (res.ok) setReturns(await res.json());
   };
 
@@ -26,7 +26,7 @@ export function AdminReturns() {
 
   const setStatus = async (id: string, status: ReturnStatus) => {
     const idToken = await getIdToken();
-    await authedFetch("/api/admin/returns", idToken, { method: "PATCH", body: JSON.stringify({ id, status }) });
+    await authedFetch("/api/admin?resource=returns", idToken, { method: "PATCH", body: JSON.stringify({ id, status }) });
     load();
   };
 
