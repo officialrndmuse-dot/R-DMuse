@@ -1,5 +1,4 @@
 import { getSupabase } from "./supabase.js";
-import { products } from "../../src/data/products.js";
 import type { WishlistItem } from "../../src/types.js";
 
 interface WishlistRow {
@@ -24,9 +23,15 @@ export async function listWishlist(userId: string): Promise<WishlistItem[]> {
 }
 
 export async function addWishlistItem(userId: string, productId: string): Promise<void> {
-  if (!products.find((p) => p.id === productId)) throw new Error("Unknown product");
-
   const supabase = getSupabase();
+  const { data: product, error: productError } = await supabase
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .maybeSingle();
+  if (productError) throw new Error(`Failed to look up product: ${productError.message}`);
+  if (!product) throw new Error("Unknown product");
+
   const { error } = await supabase
     .from("wishlist")
     .insert({ user_id: userId, product_id: productId });

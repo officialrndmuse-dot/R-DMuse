@@ -14,5 +14,5 @@
     "noUnusedParameters": true,
     "types": ["node"]
   },
-  "include": ["api", "src/types.ts", "src/data/products.ts", "src/lib/pricing.ts"]
+  "include": ["api", "src/types.ts", "src/lib/pricing.ts"]
 }

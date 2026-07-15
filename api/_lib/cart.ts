@@ -1,5 +1,4 @@
-import { products } from "../../src/data/products.js";
-import { getShippingDims } from "../../src/lib/pricing.js";
+import { getSupabase } from "./supabase.js";
 import type { OrderItem } from "../../src/types.js";
 
 export interface CartInputLine {
@@ -7,15 +6,38 @@ export interface CartInputLine {
   qty: number;
 }
 
+interface ProductRow {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  sku: string | null;
+  weight_kg: number;
+  length_cm: number;
+  breadth_cm: number;
+  height_cm: number;
+}
+
 // Rebuilds order line items from the authoritative product catalog —
 // price/weight/dimensions are never trusted from the client.
-export function resolveOrderItems(cart: unknown): { items: OrderItem[]; subtotal: number } {
+export async function resolveOrderItems(
+  cart: unknown
+): Promise<{ items: OrderItem[]; subtotal: number }> {
   if (!Array.isArray(cart) || cart.length === 0) {
     throw new Error("Cart is empty");
   }
+  const lines = cart as CartInputLine[];
 
-  const items: OrderItem[] = cart.map((line: CartInputLine) => {
-    const product = products.find((p) => p.id === line.productId);
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("products")
+    .select()
+    .in("id", lines.map((l) => l.productId));
+  if (error) throw new Error(`Failed to load products: ${error.message}`);
+  const rows = data as ProductRow[];
+
+  const items: OrderItem[] = lines.map((line) => {
+    const product = rows.find((p) => p.id === line.productId);
     if (!product) throw new Error(`Unknown product: ${line.productId}`);
 
     const qty = Math.floor(Number(line.qty));
@@ -23,14 +45,16 @@ export function resolveOrderItems(cart: unknown): { items: OrderItem[]; subtotal
       throw new Error(`Invalid quantity for ${product.name}`);
     }
 
-    const dims = getShippingDims(product);
     return {
       productId: product.id,
       sku: product.sku ?? product.id,
       name: product.name,
       price: product.price,
       qty,
-      ...dims,
+      weightKg: product.weight_kg,
+      lengthCm: product.length_cm,
+      breadthCm: product.breadth_cm,
+      heightCm: product.height_cm,
     };
   });
 

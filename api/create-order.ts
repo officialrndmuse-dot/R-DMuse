@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const body = req.body ?? {};
     const address = validateAddress(body.address);
-    const { items, subtotal } = resolveOrderItems(body.items);
+    const { items, subtotal } = await resolveOrderItems(body.items);
     const { shipping, tax, total } = computeOrderTotals(subtotal);
 
     const paymentMethod = body.paymentMethod === "razorpay" ? "razorpay" : "cod";
