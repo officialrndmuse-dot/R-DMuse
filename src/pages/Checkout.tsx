@@ -27,7 +27,7 @@ export function Checkout() {
     name: "", email: "", phone: "", address: "", city: "", state: "", pincode: "",
   });
 
-  interface ShippingQuote { shipping: number; tax: number; total: number }
+  interface ShippingQuote { shipping: number; tax: number; total: number; live: boolean }
   const [quote, setQuote] = useState<ShippingQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [unserviceable, setUnserviceable] = useState(false);
@@ -59,7 +59,7 @@ export function Checkout() {
             setUnserviceable(true);
             setQuote(null);
           } else {
-            setQuote({ shipping: data.shipping, tax: data.tax, total: data.total });
+            setQuote({ shipping: data.shipping, tax: data.tax, total: data.total, live: !!data.live });
           }
         })
         .catch(() => {
@@ -241,7 +241,9 @@ export function Checkout() {
             </div>
           </dl>
           {!quoteLoading && quote && (
-            <p className="mt-1 text-xs text-plum/40">Based on your delivery pincode</p>
+            <p className="mt-1 text-xs text-plum/40">
+              {quote.live ? "Based on your delivery pincode" : "Estimated rate — couldn't reach live rates"}
+            </p>
           )}
           <div className="my-3 h-px bg-plum/10" />
           <div className="flex justify-between font-semibold">

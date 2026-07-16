@@ -116,7 +116,10 @@ export async function getShippingRate(
   cod: boolean
 ): Promise<ShippingRateResult> {
   const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE;
-  if (!pickupPincode) return { ok: false, reason: "error" };
+  if (!pickupPincode) {
+    console.error("getShippingRate: SHIPROCKET_PICKUP_PINCODE env var is not set");
+    return { ok: false, reason: "error" };
+  }
 
   try {
     const token = await getToken();
@@ -130,23 +133,32 @@ export async function getShippingRate(
     const res = await fetch(`${BASE_URL}/courier/serviceability/?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) return { ok: false, reason: "error" };
+    if (!res.ok) {
+      console.error("getShippingRate: serviceability request failed", res.status, await res.text());
+      return { ok: false, reason: "error" };
+    }
 
     const data = (await res.json()) as {
       data?: {
         available_courier_companies?: { rate: number; courier_company_id: number }[];
         recommended_courier_id?: number;
       };
+      status_code?: number;
+      message?: string;
     };
     const couriers = data.data?.available_courier_companies ?? [];
-    if (couriers.length === 0) return { ok: false, reason: "unserviceable" };
+    if (couriers.length === 0) {
+      console.error("getShippingRate: no serviceable couriers", JSON.stringify(data));
+      return { ok: false, reason: "unserviceable" };
+    }
 
     const recommendedId = data.data?.recommended_courier_id;
     const chosen =
       couriers.find((c) => c.courier_company_id === recommendedId) ??
       couriers.reduce((a, b) => (a.rate <= b.rate ? a : b));
     return { ok: true, rate: Math.round(chosen.rate) };
-  } catch {
+  } catch (err) {
+    console.error("getShippingRate: unexpected error", err);
     return { ok: false, reason: "error" };
   }
 }
