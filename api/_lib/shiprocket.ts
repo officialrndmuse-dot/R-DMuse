@@ -101,6 +101,56 @@ export async function createShiprocketOrder(order: Order): Promise<ShiprocketOrd
   };
 }
 
+export type ShippingRateResult =
+  | { ok: true; rate: number }
+  | { ok: false; reason: "unserviceable" }
+  | { ok: false; reason: "error" };
+
+// Live shipping cost for a delivery pincode from Shiprocket's own courier
+// serviceability check -- the same rate Shiprocket would actually charge,
+// rather than the flat placeholder rate in src/lib/pricing.ts. Picks the
+// recommended courier's rate, falling back to the cheapest available one.
+export async function getShippingRate(
+  deliveryPincode: string,
+  weightKg: number,
+  cod: boolean
+): Promise<ShippingRateResult> {
+  const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE;
+  if (!pickupPincode) return { ok: false, reason: "error" };
+
+  try {
+    const token = await getToken();
+    const params = new URLSearchParams({
+      pickup_postcode: pickupPincode,
+      delivery_postcode: deliveryPincode,
+      weight: String(Math.max(weightKg, 0.1)),
+      cod: cod ? "1" : "0",
+    });
+
+    const res = await fetch(`${BASE_URL}/courier/serviceability/?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return { ok: false, reason: "error" };
+
+    const data = (await res.json()) as {
+      data?: {
+        available_courier_companies?: { rate: number; courier_company_id: number }[];
+        recommended_courier_id?: number;
+      };
+    };
+    const couriers = data.data?.available_courier_companies ?? [];
+    if (couriers.length === 0) return { ok: false, reason: "unserviceable" };
+
+    const recommendedId = data.data?.recommended_courier_id;
+    const chosen =
+      couriers.find((c) => c.courier_company_id === recommendedId) ??
+      couriers.reduce((a, b) => (a.rate <= b.rate ? a : b));
+    return { ok: true, rate: Math.round(chosen.rate) };
+  } catch {
+    return { ok: false, reason: "error" };
+  }
+}
+
 export interface AwbAssignResult {
   awbCode: string;
   courierName: string;

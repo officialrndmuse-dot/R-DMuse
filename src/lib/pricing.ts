@@ -11,8 +11,13 @@ export interface OrderTotals {
   total: number;
 }
 
-export function computeOrderTotals(subtotal: number): OrderTotals {
-  const shipping = subtotal >= FREE_SHIP_OVER ? 0 : SHIPPING_FLAT;
+// liveShippingRate: the real Shiprocket-quoted cost for this delivery
+// pincode, when available (see api/_lib/shiprocket.ts's getShippingRate).
+// Falls back to the flat placeholder rate if Shiprocket couldn't be reached —
+// the free-shipping-over-threshold perk still applies either way.
+export function computeOrderTotals(subtotal: number, liveShippingRate?: number | null): OrderTotals {
+  const baseRate = liveShippingRate ?? SHIPPING_FLAT;
+  const shipping = subtotal >= FREE_SHIP_OVER ? 0 : baseRate;
   const tax = Math.round(subtotal * TAX_RATE);
   const total = subtotal + shipping + tax;
   return { shipping, tax, total };

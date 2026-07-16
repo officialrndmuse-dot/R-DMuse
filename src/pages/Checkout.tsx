@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { inr } from "../lib/format";
@@ -27,6 +27,55 @@ export function Checkout() {
     name: "", email: "", phone: "", address: "", city: "", state: "", pincode: "",
   });
 
+  interface ShippingQuote { shipping: number; tax: number; total: number }
+  const [quote, setQuote] = useState<ShippingQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [unserviceable, setUnserviceable] = useState(false);
+
+  // Live shipping quote from Shiprocket once a valid pincode is entered —
+  // debounced so we're not firing a request on every keystroke.
+  useEffect(() => {
+    setUnserviceable(false);
+    if (!PINCODE_RE.test(form.pincode) || items.length === 0) {
+      setQuote(null);
+      return;
+    }
+    let cancelled = false;
+    setQuoteLoading(true);
+    const timer = setTimeout(() => {
+      fetch("/api/shipping-rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pincode: form.pincode,
+          items: items.map(({ product, qty }) => ({ productId: product.id, qty })),
+          paymentMethod,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled) return;
+          if (!data.serviceable) {
+            setUnserviceable(true);
+            setQuote(null);
+          } else {
+            setQuote({ shipping: data.shipping, tax: data.tax, total: data.total });
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setQuote(null);
+        })
+        .finally(() => {
+          if (!cancelled) setQuoteLoading(false);
+        });
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.pincode, paymentMethod, items.length]);
+
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">
@@ -46,7 +95,8 @@ export function Checkout() {
     form.address.trim() &&
     form.city.trim() &&
     form.state.trim() &&
-    PINCODE_RE.test(form.pincode);
+    PINCODE_RE.test(form.pincode) &&
+    !unserviceable;
 
   const handleSubmit = async () => {
     setStatus("submitting");
@@ -105,7 +155,7 @@ export function Checkout() {
     }
   };
 
-  const { shipping, tax, total } = computeOrderTotals(subtotal);
+  const { shipping, tax, total } = quote ?? computeOrderTotals(subtotal);
   const busy = status === "submitting" || status === "awaiting-payment";
 
   return (
@@ -124,6 +174,11 @@ export function Checkout() {
             <Field label="State" value={form.state} onChange={update("state")} />
             <Field label="Pincode" value={form.pincode} onChange={update("pincode")} />
           </div>
+          {unserviceable && (
+            <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">
+              Sorry, we can't currently ship to this pincode.
+            </p>
+          )}
 
           <fieldset className="rounded-xl border border-plum/20 p-4">
             <legend className="px-1 text-sm font-medium text-plum">Payment method</legend>
@@ -174,8 +229,20 @@ export function Checkout() {
           <dl className="space-y-2 text-sm text-plum/70">
             <div className="flex justify-between"><dt>Subtotal</dt><dd>{inr(subtotal)}</dd></div>
             <div className="flex justify-between"><dt>Tax</dt><dd>{inr(tax)}</dd></div>
-            <div className="flex justify-between"><dt>Shipping</dt><dd>{shipping === 0 ? "Free" : inr(shipping)}</dd></div>
+            <div className="flex justify-between">
+              <dt>Shipping</dt>
+              <dd>
+                {quoteLoading
+                  ? "Checking…"
+                  : shipping === 0
+                  ? "Free"
+                  : inr(shipping)}
+              </dd>
+            </div>
           </dl>
+          {!quoteLoading && quote && (
+            <p className="mt-1 text-xs text-plum/40">Based on your delivery pincode</p>
+          )}
           <div className="my-3 h-px bg-plum/10" />
           <div className="flex justify-between font-semibold">
             <span>Total</span><span>{inr(total)}</span>

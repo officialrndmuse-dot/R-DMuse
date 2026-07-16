@@ -3,7 +3,7 @@ import { computeOrderTotals } from "../src/lib/pricing.js";
 import { validateAddress } from "./_lib/validate.js";
 import { resolveOrderItems } from "./_lib/cart.js";
 import { insertOrder, setRazorpayOrderId, markShipmentCreated, markCourierAssigned } from "./_lib/orders.js";
-import { createShiprocketOrder, assignAWB } from "./_lib/shiprocket.js";
+import { createShiprocketOrder, assignAWB, getShippingRate } from "./_lib/shiprocket.js";
 import { createRazorpayOrder } from "./_lib/razorpay.js";
 import { getAuthedUser } from "./_lib/auth.js";
 
@@ -17,9 +17,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = req.body ?? {};
     const address = validateAddress(body.address);
     const { items, subtotal } = await resolveOrderItems(body.items);
-    const { shipping, tax, total } = computeOrderTotals(subtotal);
-
     const paymentMethod = body.paymentMethod === "razorpay" ? "razorpay" : "cod";
+
+    // Live rate from Shiprocket, based on the actual delivery pincode and
+    // cart weight -- an "unserviceable" result is a real business fact (we
+    // genuinely can't ship there), so the order is rejected rather than
+    // silently falling back. A technical error (auth/network) instead falls
+    // back to the flat placeholder rate so a Shiprocket hiccup never blocks
+    // checkout.
+    const totalWeightKg = items.reduce((sum, i) => sum + i.weightKg * i.qty, 0);
+    const rateResult = await getShippingRate(address.pincode, totalWeightKg, paymentMethod === "cod");
+    if (!rateResult.ok && rateResult.reason === "unserviceable") {
+      res.status(400).json({ error: "Sorry, we can't currently ship to this pincode." });
+      return;
+    }
+    const liveShipping = rateResult.ok ? rateResult.rate : null;
+    const { shipping, tax, total } = computeOrderTotals(subtotal, liveShipping);
 
     // Optional — guest checkout (no Authorization header) is unaffected.
     const authedUser = await getAuthedUser(req);
